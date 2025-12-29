@@ -10,6 +10,7 @@ const (
 	ColorPurple = "#7D56F4"
 	ColorWhite  = "#FFFFFF"
 	ColorGray   = "#888888"
+	ColorGreen  = "#00AA00"
 )
 
 // Status symbols
@@ -47,7 +48,8 @@ var (
 
 	// CompletedStatusStyle for completed items
 	CompletedStatusStyle = lipgloss.NewStyle().
-				Foreground(lipgloss.Color(ColorGray))
+				Foreground(lipgloss.Color(ColorGreen)).
+				Bold(true)
 
 	// EmptyStateStyle for empty state messages
 	EmptyStateStyle = lipgloss.NewStyle().
