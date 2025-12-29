@@ -7,7 +7,8 @@ import (
 	"github.com/tito-sala/rusky/internal/tui"
 )
 
-const version = "0.1.0"
+// version is set via ldflags at build time
+var version = "dev"
 
 var (
 	manager *debt.Manager

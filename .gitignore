@@ -38,3 +38,10 @@ Thumbs.db
 
 # Documentation (working files)
 ROADMAP.md
+
+# Test coverage
+coverage.out
+coverage.html
+
+# CI/CD and Makefile artifacts
+*.test

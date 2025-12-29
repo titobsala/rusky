@@ -1,0 +1,200 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to release'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build Releases
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+          - goos: linux
+            goarch: arm64
+          - goos: darwin
+            goarch: amd64
+          - goos: darwin
+            goarch: arm64
+          - goos: windows
+            goarch: amd64
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+          cache: true
+
+      - name: Get version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.tag }}"
+          else
+            VERSION=${GITHUB_REF#refs/tags/}
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Building version: $VERSION"
+
+      - name: Build binary
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: 0
+        run: |
+          BINARY_NAME="rusky"
+          if [ "$GOOS" = "windows" ]; then
+            BINARY_NAME="rusky.exe"
+          fi
+
+          go build \
+            -ldflags "-s -w -X github.com/tito-sala/rusky/internal/cli.version=${{ steps.version.outputs.version }}" \
+            -trimpath \
+            -o "$BINARY_NAME" \
+            ./cmd/rusky
+
+          # Create dist directory
+          mkdir -p dist
+
+          # Package the binary
+          if [ "$GOOS" = "windows" ]; then
+            ARCHIVE="rusky-${{ steps.version.outputs.version }}-$GOOS-$GOARCH.zip"
+            zip "dist/$ARCHIVE" "$BINARY_NAME" README.md LICENSE
+          else
+            ARCHIVE="rusky-${{ steps.version.outputs.version }}-$GOOS-$GOARCH.tar.gz"
+            tar czf "dist/$ARCHIVE" "$BINARY_NAME" README.md LICENSE
+          fi
+
+          # Generate checksum
+          cd dist
+          sha256sum "$ARCHIVE" > "${ARCHIVE}.sha256"
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: rusky-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 7
+
+  release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Get version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.tag }}"
+          else
+            VERSION=${GITHUB_REF#refs/tags/}
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          # Get the previous tag
+          PREVIOUS_TAG=$(git tag --sort=-version:refname | grep -v "${{ steps.version.outputs.version }}" | head -n 1)
+
+          if [ -z "$PREVIOUS_TAG" ]; then
+            echo "changelog=Initial release" >> $GITHUB_OUTPUT
+          else
+            # Generate changelog from commits
+            CHANGELOG=$(git log --pretty=format:"- %s" ${PREVIOUS_TAG}..${{ steps.version.outputs.version }})
+            # Escape newlines for GitHub Actions
+            CHANGELOG="${CHANGELOG//'%'/'%25'}"
+            CHANGELOG="${CHANGELOG//$'\n'/'%0A'}"
+            CHANGELOG="${CHANGELOG//$'\r'/'%0D'}"
+            echo "changelog=$CHANGELOG" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.version }}
+          name: Release ${{ steps.version.outputs.version }}
+          body: |
+            ## Changes
+
+            ${{ steps.changelog.outputs.changelog }}
+
+            ## Installation
+
+            Download the appropriate binary for your platform from the assets below.
+
+            ### Linux (amd64)
+            ```bash
+            curl -LO https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.version }}/rusky-${{ steps.version.outputs.version }}-linux-amd64.tar.gz
+            tar xzf rusky-${{ steps.version.outputs.version }}-linux-amd64.tar.gz
+            sudo mv rusky /usr/local/bin/
+            ```
+
+            ### Linux (arm64)
+            ```bash
+            curl -LO https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.version }}/rusky-${{ steps.version.outputs.version }}-linux-arm64.tar.gz
+            tar xzf rusky-${{ steps.version.outputs.version }}-linux-arm64.tar.gz
+            sudo mv rusky /usr/local/bin/
+            ```
+
+            ### macOS (Intel)
+            ```bash
+            curl -LO https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.version }}/rusky-${{ steps.version.outputs.version }}-darwin-amd64.tar.gz
+            tar xzf rusky-${{ steps.version.outputs.version }}-darwin-amd64.tar.gz
+            sudo mv rusky /usr/local/bin/
+            ```
+
+            ### macOS (Apple Silicon)
+            ```bash
+            curl -LO https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.version }}/rusky-${{ steps.version.outputs.version }}-darwin-arm64.tar.gz
+            tar xzf rusky-${{ steps.version.outputs.version }}-darwin-arm64.tar.gz
+            sudo mv rusky /usr/local/bin/
+            ```
+
+            ### Windows (amd64)
+            Download the zip file and extract it to your desired location.
+
+            ## Checksums
+
+            SHA256 checksums are provided for all binaries. Verify your download:
+            ```bash
+            sha256sum -c rusky-${{ steps.version.outputs.version }}-<platform>-<arch>.<ext>.sha256
+            ```
+
+            ---
+
+            🤖 Generated with [Claude Code](https://claude.com/claude-code)
+          files: artifacts/*
+          draft: false
+          prerelease: false
+          generate_release_notes: false
