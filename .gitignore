@@ -35,3 +35,6 @@ Thumbs.db
 
 # Test .rusky.json files (for development)
 .rusky.json
+
+# Documentation (working files)
+ROADMAP.md
