@@ -2,9 +2,11 @@ package cli
 
 import (
 	"fmt"
-	"strings"
 
+	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/lipgloss/table"
 	"github.com/spf13/cobra"
+	"github.com/tito-sala/rusky/internal/styles"
 )
 
 var listCmd = &cobra.Command{
@@ -18,28 +20,53 @@ var listCmd = &cobra.Command{
 		}
 
 		if len(items) == 0 {
-			fmt.Println("No technical debt items found.")
-			fmt.Println("Use 'rusky add <description>' to add your first item.")
+			emptyMsg := styles.EmptyStateStyle.Render("No technical debt items found.")
+			hint := styles.EmptyStateStyle.Render("Use 'rusky add <description>' to add your first item.")
+			fmt.Println(emptyMsg)
+			fmt.Println(hint)
 			return nil
 		}
 
-		// Print header
-		fmt.Printf("%-4s %-12s %-20s %s\n", "IDX", "STATUS", "CREATED", "DESCRIPTION")
-		fmt.Println(strings.Repeat("-", 80))
+		// Create and configure the table
+		t := table.New().
+			Headers("IDX", "STATUS", "DESCRIPTION").
+			Border(lipgloss.RoundedBorder()).
+			BorderStyle(styles.TableBorderStyle).
+			StyleFunc(func(row, col int) lipgloss.Style {
+				// Header row styling
+				if row == 0 {
+					return styles.HeaderStyle
+				}
+				return lipgloss.NewStyle()
+			})
 
-		// Print items
+		// Add rows to the table
 		for i, item := range items {
-			status := string(item.Status)
-			if item.IsCompleted() {
-				status = "✓ " + status
-			}
-
-			created := item.CreatedAt.Format("2006-01-02 15:04")
-
-			fmt.Printf("%-4d %-12s %-20s %s\n", i+1, status, created, item.Description)
+			t.Row(
+				fmt.Sprintf("%d", i+1),
+				styles.GetStatusSymbol(item),
+				item.Description,
+			)
 		}
 
-		fmt.Printf("\nTotal: %d items\n", len(items))
+		// Calculate statistics
+		openCount := 0
+		completedCount := 0
+		for _, item := range items {
+			if item.IsCompleted() {
+				completedCount++
+			} else {
+				openCount++
+			}
+		}
+
+		// Print styled output
+		fmt.Println(styles.TitleStyle.Render("Technical Debt Items"))
+		fmt.Println(t.String())
+		fmt.Println(styles.FooterStyle.Render(
+			fmt.Sprintf("Total: %d items • %d open • %d completed",
+				len(items), openCount, completedCount),
+		))
 
 		return nil
 	},
