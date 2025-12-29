@@ -20,6 +20,7 @@ vendor/
 # Built application
 rusky
 rusky-*
+dist/
 
 # IDE specific files
 .idea/
