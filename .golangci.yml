@@ -17,6 +17,7 @@ linters:
     - revive         # Fast, configurable, extensible, flexible, and beautiful linter for Go
     - gocritic       # The most opinionated Go source code linter
     - gosec          # Inspects source code for security problems
+    - shadow         # Check for shadowed variables
 
 linters-settings:
   errcheck:
@@ -24,7 +25,6 @@ linters-settings:
     check-type-assertions: true
 
   govet:
-    check-shadowing: true
     enable-all: true
 
   goimports:

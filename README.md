@@ -174,7 +174,7 @@ This file is:
 
 ### Prerequisites
 
-- Go 1.25 or later
+- Go 1.23 or later
 - golangci-lint (for linting)
 
 ### Building from Source
