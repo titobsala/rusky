@@ -6,20 +6,44 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/lipgloss/table"
 	"github.com/spf13/cobra"
+	"github.com/tito-sala/rusky/internal/debt"
 	"github.com/tito-sala/rusky/internal/styles"
 )
 
+var statusFilter string
+
 var listCmd = &cobra.Command{
 	Use:   "list",
-	Short: "List all technical debt items",
-	Long:  "Display all technical debt items in a simple text format.",
+	Short: "List technical debt items with optional filtering",
+	Long:  "Display technical debt items in a formatted table. Use --status to filter by item status.",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		items, err := manager.List()
 		if err != nil {
 			return fmt.Errorf("failed to list items: %w", err)
 		}
 
-		if len(items) == 0 {
+		// Validate status filter
+		validStatuses := map[string]bool{"all": true, "open": true, "completed": true}
+		if !validStatuses[statusFilter] {
+			return fmt.Errorf("invalid status '%s': must be 'all', 'open', or 'completed'", statusFilter)
+		}
+
+		// Apply status filter
+		filteredItems := items
+		if statusFilter != "all" {
+			filteredItems = []debt.DebtItem{}
+			targetStatus := debt.StatusOpen
+			if statusFilter == "completed" {
+				targetStatus = debt.StatusCompleted
+			}
+			for _, item := range items {
+				if item.Status == targetStatus {
+					filteredItems = append(filteredItems, item)
+				}
+			}
+		}
+
+		if len(filteredItems) == 0 {
 			emptyMsg := styles.EmptyStateStyle.Render("No technical debt items found.")
 			hint := styles.EmptyStateStyle.Render("Use 'rusky add <description>' to add your first item.")
 			fmt.Println(emptyMsg)
@@ -41,7 +65,7 @@ var listCmd = &cobra.Command{
 			})
 
 		// Add rows to the table
-		for i, item := range items {
+		for i, item := range filteredItems {
 			t.Row(
 				fmt.Sprintf("%d", i+1),
 				styles.GetStatusSymbol(item),
@@ -52,7 +76,7 @@ var listCmd = &cobra.Command{
 		// Calculate statistics
 		openCount := 0
 		completedCount := 0
-		for _, item := range items {
+		for _, item := range filteredItems {
 			if item.IsCompleted() {
 				completedCount++
 			} else {
@@ -65,9 +89,14 @@ var listCmd = &cobra.Command{
 		fmt.Println(t.String())
 		fmt.Println(styles.FooterStyle.Render(
 			fmt.Sprintf("Total: %d items • %d open • %d completed",
-				len(items), openCount, completedCount),
+				len(filteredItems), openCount, completedCount),
 		))
 
 		return nil
 	},
+}
+
+func init() {
+	listCmd.Flags().StringVar(&statusFilter, "status", "all",
+		"Filter by status: open, completed, or all")
 }
