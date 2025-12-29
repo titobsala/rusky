@@ -24,7 +24,6 @@ linters-settings:
     check-type-assertions: true
 
   govet:
-    check-shadowing: true
     enable-all: true
 
   goimports:
