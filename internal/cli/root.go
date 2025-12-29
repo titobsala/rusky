@@ -2,6 +2,7 @@ package cli
 
 import (
 	"github.com/spf13/cobra"
+
 	"github.com/tito-sala/rusky/internal/debt"
 	"github.com/tito-sala/rusky/internal/storage"
 	"github.com/tito-sala/rusky/internal/tui"

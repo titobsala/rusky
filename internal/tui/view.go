@@ -8,7 +8,7 @@ import (
 )
 
 // View renders the TUI
-func (m Model) View() string {
+func (m *Model) View() string {
 	if m.quitting {
 		return ""
 	}
@@ -75,7 +75,7 @@ func (m Model) View() string {
 }
 
 // renderItem renders a single debt item
-func (m Model) renderItem(itemIndex, displayIndex int) string {
+func (m *Model) renderItem(itemIndex, displayIndex int) string {
 	item := m.items[itemIndex]
 	isCurrent := m.cursor == itemIndex
 

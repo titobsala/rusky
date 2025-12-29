@@ -68,7 +68,7 @@ func (s *JSONStorage) Save(items []debt.DebtItem) error {
 	}
 
 	// Write to file with appropriate permissions
-	if err := os.WriteFile(s.filepath, data, 0644); err != nil {
+	if err := os.WriteFile(s.filepath, data, 0600); err != nil {
 		return fmt.Errorf("failed to write file: %w", err)
 	}
 

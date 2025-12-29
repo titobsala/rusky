@@ -9,12 +9,12 @@ import (
 
 // Model represents the TUI state
 type Model struct {
-	manager  *debt.Manager
 	items    []debt.DebtItem
+	err      error
+	manager  *debt.Manager
 	cursor   int
 	width    int
 	height   int
-	err      error
 	quitting bool
 }
 
@@ -35,7 +35,7 @@ func NewModel(manager *debt.Manager) (*Model, error) {
 }
 
 // Init initializes the model (required by Bubbletea)
-func (m Model) Init() tea.Cmd {
+func (m *Model) Init() tea.Cmd {
 	return nil
 }
 

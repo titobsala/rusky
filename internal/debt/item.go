@@ -14,11 +14,11 @@ const (
 
 // DebtItem represents a single technical debt item
 type DebtItem struct {
+	CreatedAt   time.Time  `json:"created_at"`
+	CompletedAt *time.Time `json:"completed_at,omitempty"`
 	ID          string     `json:"id"`
 	Description string     `json:"description"`
 	Status      Status     `json:"status"`
-	CreatedAt   time.Time  `json:"created_at"`
-	CompletedAt *time.Time `json:"completed_at,omitempty"`
 }
 
 // IsCompleted returns true if the debt item is marked as completed
