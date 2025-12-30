@@ -27,41 +27,38 @@ func (m *Model) View() string {
 		b.WriteString("\n\n")
 	}
 
-	// Separate items into open and completed
-	var openItems, completedItems []int
-	for i, item := range m.items {
-		if item.IsCompleted() {
-			completedItems = append(completedItems, i)
-		} else {
-			openItems = append(openItems, i)
-		}
-	}
+	// Get count of open items
+	openCount := m.getOpenCount()
 
-	// Render open items
-	b.WriteString(subtitleStyle.Render(fmt.Sprintf("Open Items (%d)", len(openItems))))
+	// Render open items section
+	b.WriteString(subtitleStyle.Render(fmt.Sprintf("Open Items (%d)", openCount)))
 	b.WriteString("\n")
 
-	if len(openItems) == 0 {
+	if openCount == 0 {
 		b.WriteString(emptyStateStyle.Render("No open items"))
 		b.WriteString("\n")
 	} else {
-		for idx, i := range openItems {
-			b.WriteString(m.renderItem(i, idx+1))
+		for visualPos := 0; visualPos < openCount; visualPos++ {
+			arrayIndex := m.visualToArray[visualPos]
+			b.WriteString(m.renderItem(arrayIndex, visualPos, visualPos+1))
 		}
 	}
 
 	b.WriteString("\n")
 
-	// Render completed items
-	b.WriteString(subtitleStyle.Render(fmt.Sprintf("Completed Items (%d)", len(completedItems))))
+	// Render completed items section
+	completedCount := len(m.visualToArray) - openCount
+	b.WriteString(subtitleStyle.Render(fmt.Sprintf("Completed Items (%d)", completedCount)))
 	b.WriteString("\n")
 
-	if len(completedItems) == 0 {
+	if completedCount == 0 {
 		b.WriteString(emptyStateStyle.Render("No completed items"))
 		b.WriteString("\n")
 	} else {
-		for idx, i := range completedItems {
-			b.WriteString(m.renderItem(i, len(openItems)+idx+1))
+		for visualPos := openCount; visualPos < len(m.visualToArray); visualPos++ {
+			arrayIndex := m.visualToArray[visualPos]
+			displayIndex := visualPos - openCount + 1
+			b.WriteString(m.renderItem(arrayIndex, visualPos, displayIndex))
 		}
 	}
 
@@ -75,9 +72,12 @@ func (m *Model) View() string {
 }
 
 // renderItem renders a single debt item
-func (m *Model) renderItem(itemIndex, displayIndex int) string {
-	item := m.items[itemIndex]
-	isCurrent := m.cursor == itemIndex
+// arrayIndex: index in m.items array
+// visualPos: position in visual display (0-based)
+// displayIndex: number shown to user (1-based, resets for each section)
+func (m *Model) renderItem(arrayIndex, visualPos, displayIndex int) string {
+	item := m.items[arrayIndex]
+	isCurrent := m.cursor == visualPos
 
 	var prefix, text string
 

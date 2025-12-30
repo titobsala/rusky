@@ -32,14 +32,17 @@ func (m *Model) handleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 
 	case "down", "j":
-		if m.cursor < len(m.items)-1 {
+		if m.cursor < len(m.visualToArray)-1 {
 			m.cursor++
 		}
 
 	case "enter", " ":
 		// Toggle completion status
-		if len(m.items) > 0 && m.cursor < len(m.items) {
-			item := &m.items[m.cursor]
+		if len(m.visualToArray) > 0 && m.cursor < len(m.visualToArray) {
+			// Map visual position to array index
+			arrayIndex := m.visualToArray[m.cursor]
+			item := &m.items[arrayIndex]
+
 			if item.IsCompleted() {
 				item.Reopen()
 			} else {
@@ -49,6 +52,17 @@ func (m *Model) handleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			// Save changes to storage
 			if err := m.manager.Save(m.items); err != nil {
 				m.err = err
+			} else {
+				// Rebuild visual mapping after status change
+				m.buildVisualMapping()
+
+				// Keep cursor on the same item (it moved to new visual position)
+				for visualPos, arrIdx := range m.visualToArray {
+					if arrIdx == arrayIndex {
+						m.cursor = visualPos
+						break
+					}
+				}
 			}
 		}
 	}
