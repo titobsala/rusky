@@ -16,7 +16,7 @@ func (m *Model) View() string {
 	var b strings.Builder
 
 	// Header
-	header := titleStyle.Render("Rusky - Technical Debt Manager v0.1.0")
+	header := titleStyle.Render("Rusky - Technical Debt Manager v0.1.4")
 	b.WriteString(header)
 	b.WriteString("\n\n")
 
