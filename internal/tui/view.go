@@ -16,7 +16,7 @@ func (m *Model) View() string {
 	var b strings.Builder
 
 	// Header
-	header := titleStyle.Render("Rusky - Technical Debt Manager v0.1.4")
+	header := titleStyle.Render("Rusky - Technical Debt Manager v0.2.0")
 	b.WriteString(header)
 	b.WriteString("\n\n")
 
@@ -25,6 +25,11 @@ func (m *Model) View() string {
 		errorStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#FF0000"))
 		b.WriteString(errorStyle.Render(fmt.Sprintf("Error: %v", m.err)))
 		b.WriteString("\n\n")
+	}
+
+	// Show delete confirmation dialog if active
+	if m.showDeleteConfirm {
+		return m.renderDeleteConfirmation()
 	}
 
 	// Get count of open items
@@ -65,8 +70,67 @@ func (m *Model) View() string {
 	b.WriteString("\n")
 
 	// Footer with help
-	footer := statusBarStyle.Render("↑/↓: Navigate | Enter/Space: Toggle Complete | q/Esc: Quit")
+	footer := statusBarStyle.Render("↑/↓: Navigate | Enter/Space: Toggle Complete | d: Delete | q/Esc: Quit")
 	b.WriteString(footer)
+
+	return b.String()
+}
+
+// renderDeleteConfirmation displays the delete confirmation dialog
+func (m *Model) renderDeleteConfirmation() string {
+	if m.deleteTargetIndex < 0 || m.deleteTargetIndex >= len(m.items) {
+		return ""
+	}
+
+	item := m.items[m.deleteTargetIndex]
+
+	var b strings.Builder
+
+	// Warning title
+	warningStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#FF0000")).
+		Bold(true).
+		Padding(1, 2)
+
+	b.WriteString(warningStyle.Render("\u26a0 DELETE CONFIRMATION"))
+	b.WriteString("\n\n")
+
+	// Item details
+	detailStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#FFFFFF")).
+		Padding(0, 4)
+
+	b.WriteString(detailStyle.Render("You are about to permanently delete:"))
+	b.WriteString("\n\n")
+
+	itemStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#7D56F4")).
+		Bold(true).
+		Padding(0, 6)
+
+	itemText := item.Description
+	if item.IsCodeReference() {
+		itemText = fmt.Sprintf("%s [%s]", item.Description, item.GetLocation())
+	}
+
+	b.WriteString(itemStyle.Render(itemText))
+	b.WriteString("\n\n")
+
+	// Confirmation prompt
+	promptStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#FFFFFF")).
+		Padding(0, 4)
+
+	b.WriteString(promptStyle.Render("This action cannot be undone."))
+	b.WriteString("\n\n")
+
+	// Action buttons
+	actionStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#FFFFFF")).
+		Bold(true).
+		Padding(0, 4)
+
+	b.WriteString(actionStyle.Render("Press 'y' to confirm, 'n' or 'Esc' to cancel"))
 
 	return b.String()
 }

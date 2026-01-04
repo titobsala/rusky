@@ -73,6 +73,34 @@ func (m *Manager) Complete(identifier string) (*DebtItem, error) {
 	return &items[index], nil
 }
 
+// Delete permanently removes a debt item from storage
+// The identifier can be either a UUID or a 1-based index
+func (m *Manager) Delete(identifier string) (*DebtItem, error) {
+	items, err := m.storage.Load()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load items: %w", err)
+	}
+
+	// Try to find item by UUID or index
+	index := m.findItemIndex(items, identifier)
+	if index == -1 {
+		return nil, fmt.Errorf("item not found: %s", identifier)
+	}
+
+	// Store the item for return value
+	deletedItem := items[index]
+
+	// Remove item from slice
+	items = append(items[:index], items[index+1:]...)
+
+	// Save
+	if err := m.storage.Save(items); err != nil {
+		return nil, fmt.Errorf("failed to save items: %w", err)
+	}
+
+	return &deletedItem, nil
+}
+
 // List returns all debt items
 func (m *Manager) List() ([]DebtItem, error) {
 	items, err := m.storage.Load()

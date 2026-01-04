@@ -40,6 +40,7 @@ func init() {
 	// Add subcommands
 	rootCmd.AddCommand(addCmd)
 	rootCmd.AddCommand(completeCmd)
+	rootCmd.AddCommand(deleteCmd)
 	rootCmd.AddCommand(listCmd)
 	rootCmd.AddCommand(scanCmd)
 }
