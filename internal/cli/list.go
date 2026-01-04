@@ -51,9 +51,24 @@ var listCmd = &cobra.Command{
 			return nil
 		}
 
+		// Check if any items have file locations
+		hasLocations := false
+		for _, item := range filteredItems {
+			if item.FilePath != nil {
+				hasLocations = true
+				break
+			}
+		}
+
+		// Create table headers
+		headers := []string{"IDX", "STATUS", "DESCRIPTION"}
+		if hasLocations {
+			headers = append(headers, "LOCATION")
+		}
+
 		// Create and configure the table
 		t := table.New().
-			Headers("IDX", "STATUS", "DESCRIPTION").
+			Headers(headers...).
 			Border(lipgloss.RoundedBorder()).
 			BorderStyle(styles.TableBorderStyle).
 			StyleFunc(func(row, col int) lipgloss.Style {
@@ -66,11 +81,21 @@ var listCmd = &cobra.Command{
 
 		// Add rows to the table
 		for i, item := range filteredItems {
-			t.Row(
+			row := []string{
 				fmt.Sprintf("%d", i+1),
 				styles.GetStatusSymbol(item),
 				item.Description,
-			)
+			}
+
+			if hasLocations {
+				location := ""
+				if item.FilePath != nil {
+					location = item.GetLocation()
+				}
+				row = append(row, location)
+			}
+
+			t.Row(row...)
 		}
 
 		// Calculate statistics
