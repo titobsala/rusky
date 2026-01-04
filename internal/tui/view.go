@@ -90,6 +90,11 @@ func (m *Model) renderItem(arrayIndex, visualPos, displayIndex int) string {
 	// Format the item text
 	text = fmt.Sprintf("%d. %s", displayIndex, item.Description)
 
+	// Add location if this is a code reference
+	if item.IsCodeReference() {
+		text = fmt.Sprintf("%d. %s [%s]", displayIndex, item.Description, item.GetLocation())
+	}
+
 	// Apply styling based on state
 	var style lipgloss.Style
 	if item.IsCompleted() {
