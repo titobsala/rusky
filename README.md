@@ -1,5 +1,7 @@
 # Rusky - Technical Debt Manager
 
+> **Current Version: v0.2.0** - Automatic Code Scanning
+
 [![CI](https://github.com/titobsala/rusky/workflows/CI/badge.svg)](https://github.com/titobsala/rusky/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/titobsala/rusky/workflows/CodeQL/badge.svg)](https://github.com/titobsala/rusky/actions/workflows/codeql.yml)
 [![Release](https://github.com/titobsala/rusky/workflows/Release/badge.svg)](https://github.com/titobsala/rusky/actions/workflows/release.yml)
@@ -9,8 +11,12 @@ A simple, language-agnostic TUI/CLI tool for tracking technical debt in your pro
 
 ## Features
 
+- **Automatic Code Scanning**: Detect TODO, FIXME, HACK, XXX, BUG, and NOTE comments in your codebase
+- **Interactive Selection**: Choose which scanned items to track with a beautiful TUI
+- **Multi-Language Support**: Works with C-style (`//`), Shell (`#`), block (`/* */`), and HTML (`<!-- -->`) comments
 - **Manual Debt Tracking**: Add and manage technical debt items via CLI commands
 - **Interactive TUI**: Browse and manage debt items with a beautiful terminal interface
+- **Code References**: See file paths and line numbers for scanned items
 - **Mark Complete**: Toggle completion status of debt items
 - **Local Storage**: Stores debt items in `.rusky.json` in your project root (VCS-friendly)
 - **Language-Agnostic**: Works with any codebase
@@ -56,12 +62,20 @@ sudo mv rusky /usr/local/bin/
 ## Quick Start
 
 ```bash
-# Add your first technical debt item
-rusky add "refactor authentication module"
+# Scan your codebase for technical debt markers
+rusky scan
 
-# Add more items
-rusky add "fix memory leak in data processor"
-rusky add "update deprecated API endpoints"
+# Preview scan results without adding
+rusky scan --dry-run
+
+# Scan a specific directory
+rusky scan ./src
+
+# Add all scanned items without confirmation
+rusky scan --add-all
+
+# Add items manually
+rusky add "refactor authentication module"
 
 # List all items (non-interactive)
 rusky list
@@ -76,6 +90,39 @@ rusky
 ## Usage
 
 ### Commands
+
+#### `rusky scan [path]`
+
+Scan your codebase for technical debt markers (TODO, FIXME, HACK, XXX, BUG, NOTE).
+
+```bash
+# Scan current directory
+rusky scan
+
+# Scan specific path
+rusky scan ./src
+
+# Preview without adding items
+rusky scan --dry-run
+
+# Add all items without confirmation
+rusky scan --add-all
+```
+
+**Interactive Selection:**
+When run without `--add-all`, launches a TUI to select which items to add:
+- `↑/↓` or `j/k` - Navigate
+- `Space` - Toggle selection
+- `a` - Select all
+- `n` - Deselect all
+- `Enter` - Add selected items
+- `q` or `Esc` - Cancel
+
+**Supported Comment Styles:**
+- C-style: `// TODO: description`
+- Shell-style: `# TODO: description`
+- Block comments: `/* TODO: description */`
+- HTML/XML: `<!-- TODO: description -->`
 
 #### `rusky` (Interactive TUI)
 
@@ -108,10 +155,15 @@ rusky complete 47085ae2-3240-4fac-a853-5c1400109580
 
 #### `rusky list`
 
-Display all technical debt items in a simple text format.
+Display all technical debt items in a formatted table with optional filtering.
 
 ```bash
+# List all items
 rusky list
+
+# Filter by status
+rusky list --status open
+rusky list --status completed
 ```
 
 #### `rusky version`
@@ -130,20 +182,32 @@ Rusky stores technical debt items in a `.rusky.json` file in your current workin
 
 ```json
 {
-  "version": "0.1.0",
+  "version": "0.2.0",
   "items": [
     {
       "id": "550e8400-e29b-41d4-a716-446655440000",
       "description": "refactor auth module",
       "status": "open",
-      "created_at": "2025-12-29T10:30:00Z"
+      "created_at": "2025-12-29T10:30:00Z",
+      "is_scanned": false
     },
     {
       "id": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+      "description": "Add rate limiting to API",
+      "status": "open",
+      "created_at": "2025-12-29T14:20:00Z",
+      "file_path": "internal/api/handler.go",
+      "line_number": 45,
+      "comment_type": "TODO",
+      "is_scanned": true
+    },
+    {
+      "id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
       "description": "update deprecated API endpoints",
       "status": "completed",
       "created_at": "2025-12-28T14:20:00Z",
-      "completed_at": "2025-12-29T09:15:00Z"
+      "completed_at": "2025-12-29T09:15:00Z",
+      "is_scanned": false
     }
   ]
 }
@@ -156,19 +220,30 @@ This file is:
 
 ## Roadmap
 
-### v0.2.0
-- Automatic scanning for TODO/FIXME/HACK comments in codebase
-- Filter and sort functionality (by status, date, priority)
-- Add priority/tags to debt items
+### v0.2.0 ✅ (Current Release)
+- ✅ Automatic scanning for TODO/FIXME/HACK comments in codebase
+- ✅ Interactive TUI for selecting scanned items
+- ✅ File path and line number tracking
+- ✅ Multi-language comment support
+- 🔄 Filter and sort functionality (partial - status filter implemented)
+- ⏳ Priority/tags for debt items (deferred to v0.3.0)
+- ⏳ Watch mode for continuous scanning (deferred to future release)
 
-### v0.3.0
-- Export to other formats (CSV, Markdown)
+### v0.3.0 (Planned)
+- Enhanced filtering and sorting (by date, priority, tags)
+- Priority levels (low, medium, high, critical)
+- Tags/labels for categorization
+- Export to other formats (CSV, Markdown, JSON)
+
+### v0.4.0 (Planned)
 - Integration with popular issue trackers (GitHub Issues, Jira)
+- Sync technical debt to external systems
 
 ### Future
 - Team sync capabilities
 - Dashboard with metrics (debt velocity, completion rate)
 - VS Code extension
+- Watch mode for continuous monitoring
 
 ## Development
 
