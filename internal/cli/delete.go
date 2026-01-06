@@ -19,13 +19,11 @@ var deleteCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		identifier := args[0]
 
-		// Load items to show what will be deleted
 		items, err := manager.List()
 		if err != nil {
 			return fmt.Errorf("failed to load items: %w", err)
 		}
 
-		// Find the item for confirmation
 		var itemToDelete *debt.DebtItem
 		for i := range items {
 			if items[i].ID == identifier {
@@ -34,7 +32,6 @@ var deleteCmd = &cobra.Command{
 			}
 		}
 
-		// If not found by UUID, try index
 		if itemToDelete == nil {
 			if idx, err := strconv.Atoi(identifier); err == nil {
 				if idx > 0 && idx <= len(items) {
@@ -47,7 +44,6 @@ var deleteCmd = &cobra.Command{
 			return fmt.Errorf("item not found: %s", identifier)
 		}
 
-		// Show confirmation prompt
 		fmt.Printf("\u26a0 WARNING: You are about to permanently delete:\n\n")
 		fmt.Printf("  %s", itemToDelete.Description)
 		if itemToDelete.IsCodeReference() {
@@ -57,7 +53,6 @@ var deleteCmd = &cobra.Command{
 		fmt.Printf("This action cannot be undone.\n")
 		fmt.Printf("Are you sure? (y/N): ")
 
-		// Read user confirmation
 		reader := bufio.NewReader(os.Stdin)
 		response, err := reader.ReadString('\n')
 		if err != nil {
@@ -70,7 +65,6 @@ var deleteCmd = &cobra.Command{
 			return nil
 		}
 
-		// Execute delete
 		item, err := manager.Delete(identifier)
 		if err != nil {
 			return fmt.Errorf("failed to delete item: %w", err)

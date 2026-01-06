@@ -15,27 +15,22 @@ func (m *Model) View() string {
 
 	var b strings.Builder
 
-	// Header
 	header := titleStyle.Render("Rusky - Technical Debt Manager v0.2.0")
 	b.WriteString(header)
 	b.WriteString("\n\n")
 
-	// Show error if present
 	if m.err != nil {
 		errorStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#FF0000"))
 		b.WriteString(errorStyle.Render(fmt.Sprintf("Error: %v", m.err)))
 		b.WriteString("\n\n")
 	}
 
-	// Show delete confirmation dialog if active
 	if m.showDeleteConfirm {
 		return m.renderDeleteConfirmation()
 	}
 
-	// Get count of open items
 	openCount := m.getOpenCount()
 
-	// Render open items section
 	b.WriteString(subtitleStyle.Render(fmt.Sprintf("Open Items (%d)", openCount)))
 	b.WriteString("\n")
 
@@ -51,7 +46,6 @@ func (m *Model) View() string {
 
 	b.WriteString("\n")
 
-	// Render completed items section
 	completedCount := len(m.visualToArray) - openCount
 	b.WriteString(subtitleStyle.Render(fmt.Sprintf("Completed Items (%d)", completedCount)))
 	b.WriteString("\n")
@@ -69,14 +63,12 @@ func (m *Model) View() string {
 
 	b.WriteString("\n")
 
-	// Footer with help
 	footer := statusBarStyle.Render("↑/↓: Navigate | Enter/Space: Toggle Complete | d: Delete | q/Esc: Quit")
 	b.WriteString(footer)
 
 	return b.String()
 }
 
-// renderDeleteConfirmation displays the delete confirmation dialog
 func (m *Model) renderDeleteConfirmation() string {
 	if m.deleteTargetIndex < 0 || m.deleteTargetIndex >= len(m.items) {
 		return ""
@@ -86,7 +78,6 @@ func (m *Model) renderDeleteConfirmation() string {
 
 	var b strings.Builder
 
-	// Warning title
 	warningStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#FF0000")).
 		Bold(true).
@@ -95,7 +86,6 @@ func (m *Model) renderDeleteConfirmation() string {
 	b.WriteString(warningStyle.Render("\u26a0 DELETE CONFIRMATION"))
 	b.WriteString("\n\n")
 
-	// Item details
 	detailStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#FFFFFF")).
 		Padding(0, 4)
@@ -116,7 +106,6 @@ func (m *Model) renderDeleteConfirmation() string {
 	b.WriteString(itemStyle.Render(itemText))
 	b.WriteString("\n\n")
 
-	// Confirmation prompt
 	promptStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#FFFFFF")).
 		Padding(0, 4)
@@ -124,7 +113,6 @@ func (m *Model) renderDeleteConfirmation() string {
 	b.WriteString(promptStyle.Render("This action cannot be undone."))
 	b.WriteString("\n\n")
 
-	// Action buttons
 	actionStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#FFFFFF")).
 		Bold(true).
@@ -151,15 +139,12 @@ func (m *Model) renderItem(arrayIndex, visualPos, displayIndex int) string {
 		prefix = "  "
 	}
 
-	// Format the item text
 	text = fmt.Sprintf("%d. %s", displayIndex, item.Description)
 
-	// Add location if this is a code reference
 	if item.IsCodeReference() {
 		text = fmt.Sprintf("%d. %s [%s]", displayIndex, item.Description, item.GetLocation())
 	}
 
-	// Apply styling based on state
 	var style lipgloss.Style
 	if item.IsCompleted() {
 		if isCurrent {
