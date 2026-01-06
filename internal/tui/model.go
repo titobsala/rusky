@@ -17,6 +17,10 @@ type Model struct {
 	width         int
 	height        int
 	quitting      bool
+
+	// Delete confirmation state
+	showDeleteConfirm bool
+	deleteTargetIndex int // Array index of item to delete
 }
 
 // buildVisualMapping creates a mapping from visual positions to array indices
@@ -47,6 +51,12 @@ func (m *Model) getOpenCount() int {
 		}
 	}
 	return count
+}
+
+// resetDeleteConfirmation clears the delete confirmation dialog state
+func (m *Model) resetDeleteConfirmation() {
+	m.showDeleteConfirm = false
+	m.deleteTargetIndex = -1
 }
 
 // NewModel creates a new TUI model

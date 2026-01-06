@@ -1,6 +1,7 @@
 package debt
 
 import (
+	"fmt"
 	"time"
 )
 
@@ -19,6 +20,12 @@ type DebtItem struct {
 	ID          string     `json:"id"`
 	Description string     `json:"description"`
 	Status      Status     `json:"status"`
+
+	// v0.2.0 fields for scanned items
+	FilePath    *string `json:"file_path,omitempty"`    // Relative path to source file
+	LineNumber  *int    `json:"line_number,omitempty"`  // Line number in file
+	CommentType *string `json:"comment_type,omitempty"` // TODO, FIXME, HACK, etc.
+	IsScanned   bool    `json:"is_scanned"`             // Auto-scanned vs manually added
 }
 
 // IsCompleted returns true if the debt item is marked as completed
@@ -37,6 +44,19 @@ func (d *DebtItem) Complete() {
 func (d *DebtItem) Reopen() {
 	d.Status = StatusOpen
 	d.CompletedAt = nil
+}
+
+// IsCodeReference returns true if this item references source code
+func (d *DebtItem) IsCodeReference() bool {
+	return d.FilePath != nil && d.LineNumber != nil
+}
+
+// GetLocation returns a human-readable location string (e.g., "src/main.go:123")
+func (d *DebtItem) GetLocation() string {
+	if !d.IsCodeReference() {
+		return ""
+	}
+	return fmt.Sprintf("%s:%d", *d.FilePath, *d.LineNumber)
 }
 
 // Storage defines the interface for persisting debt items

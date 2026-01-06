@@ -10,6 +10,13 @@ import (
 
 const defaultFilePath = ".rusky.json"
 
+// Version constants for .rusky.json format
+const (
+	Version010     = "0.1.0"
+	Version020     = "0.2.0"
+	CurrentVersion = Version020
+)
+
 // fileFormat represents the structure of the .rusky.json file
 type fileFormat struct {
 	Version string          `json:"version"`
@@ -50,6 +57,14 @@ func (s *JSONStorage) Load() ([]debt.DebtItem, error) {
 		return nil, fmt.Errorf("failed to parse JSON: %w", err)
 	}
 
+	// Migrate from older versions if needed
+	if fileData.Version == Version010 {
+		// v0.1.0 items don't have the new fields, but Go will initialize them properly:
+		// - FilePath, LineNumber, CommentType will be nil
+		// - IsScanned will be false (zero value)
+		// No explicit migration needed, fields are already correct
+	}
+
 	return fileData.Items, nil
 }
 
@@ -57,7 +72,7 @@ func (s *JSONStorage) Load() ([]debt.DebtItem, error) {
 func (s *JSONStorage) Save(items []debt.DebtItem) error {
 	// Prepare data structure
 	fileData := fileFormat{
-		Version: "0.1.0",
+		Version: CurrentVersion,
 		Items:   items,
 	}
 
