@@ -45,7 +45,6 @@ func runScan(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("scan failed: %w", err)
 	}
 
-	// Show summary
 	fmt.Printf("\nScan complete: found %d items\n\n", len(results))
 
 	if len(results) == 0 {
@@ -53,26 +52,22 @@ func runScan(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	// Group by type for summary
 	summary := groupByType(results)
 	for typ, count := range summary {
 		fmt.Printf("  %s: %d\n", typ, count)
 	}
 	fmt.Println()
 
-	// Handle dry-run mode
 	if dryRun {
 		fmt.Println("Dry-run mode: items not added to .rusky.json")
 		printPreview(results)
 		return nil
 	}
 
-	// Handle add-all mode
 	if addAll {
 		return addAllResults(results)
 	}
 
-	// Interactive selection via TUI
 	return tui.RunScanSelector(manager, results)
 }
 
@@ -85,7 +80,6 @@ func groupByType(results []scanner.ScanResult) map[string]int {
 }
 
 func printPreview(results []scanner.ScanResult) {
-	// Limit to first 10 for preview
 	limit := 10
 	if len(results) < limit {
 		limit = len(results)
@@ -123,7 +117,6 @@ func addScanResult(result scanner.ScanResult) error {
 		return err
 	}
 
-	// Create new debt item
 	item := debt.DebtItem{
 		ID:          uuid.New().String(),
 		Description: result.Description,
