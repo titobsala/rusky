@@ -7,7 +7,23 @@ import (
 // Update handles messages and updates the model state
 func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case tickMsg:
+		// Handle intro animation tick
+		if m.introPhase == 0 {
+			m.animationFrame++
+			if m.animationFrame >= m.animationMaxFrames {
+				m.introPhase = 1 // Transition to main UI
+			}
+			return m, tick()
+		}
+		return m, nil
+
 	case tea.KeyMsg:
+		// Skip intro animation on any key press
+		if m.introPhase == 0 {
+			m.introPhase = 1
+			return m, nil
+		}
 		return m.handleKeyPress(msg)
 
 	case tea.WindowSizeMsg:

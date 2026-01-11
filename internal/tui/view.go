@@ -5,17 +5,26 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
+	"github.com/tito-sala/rusky/internal/intro"
 )
 
 // View renders the TUI
 func (m *Model) View() string {
+	// Show intro animation first
+	if m.introPhase == 0 {
+		return intro.RenderAnimation(
+			intro.AnimationType(m.animationType),
+			m.animationFrame,
+		)
+	}
+
 	if m.quitting {
 		return ""
 	}
 
 	var b strings.Builder
 
-	header := titleStyle.Render("Rusky - Technical Debt Manager v0.2.0")
+	header := titleStyle.Render("Rusky - Technical Debt Manager v0.2.1")
 	b.WriteString(header)
 	b.WriteString("\n\n")
 

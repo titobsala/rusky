@@ -2,10 +2,16 @@ package tui
 
 import (
 	"fmt"
+	"math/rand"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/tito-sala/rusky/internal/debt"
+	"github.com/tito-sala/rusky/internal/intro"
 )
+
+// tickMsg is used for animation frame advancement
+type tickMsg time.Time
 
 // Model represents the TUI state
 type Model struct {
@@ -21,6 +27,12 @@ type Model struct {
 	// Delete confirmation state
 	showDeleteConfirm bool
 	deleteTargetIndex int // Array index of item to delete
+
+	// Intro animation state
+	introPhase         int // 0 = show animation, 1 = show main UI
+	animationType      int // which animation to display
+	animationFrame     int // current frame number
+	animationMaxFrames int // total frames for this animation
 }
 
 // buildVisualMapping creates a mapping from visual positions to array indices
@@ -67,11 +79,18 @@ func NewModel(manager *debt.Manager) (*Model, error) {
 		return nil, fmt.Errorf("failed to load items: %w", err)
 	}
 
+	// Initialize intro animation with random type
+	animType := rand.Intn(3) // 3 animation types: Lightning, Scan, AlertMode
+
 	m := &Model{
-		manager:  manager,
-		items:    items,
-		cursor:   0,
-		quitting: false,
+		manager:            manager,
+		items:              items,
+		cursor:             0,
+		quitting:           false,
+		introPhase:         0, // Start with intro animation
+		animationType:      animType,
+		animationFrame:     0,
+		animationMaxFrames: intro.GetMaxFrames(intro.AnimationType(animType)),
 	}
 
 	// Build initial visual mapping
@@ -80,9 +99,16 @@ func NewModel(manager *debt.Manager) (*Model, error) {
 	return m, nil
 }
 
+// tick returns a command that sends a tick message after 50ms (20 FPS)
+func tick() tea.Cmd {
+	return tea.Tick(time.Millisecond*50, func(t time.Time) tea.Msg {
+		return tickMsg(t)
+	})
+}
+
 // Init initializes the model (required by Bubbletea)
 func (m *Model) Init() tea.Cmd {
-	return nil
+	return tick()
 }
 
 // Run launches the TUI
