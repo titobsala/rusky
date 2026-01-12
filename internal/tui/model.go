@@ -30,9 +30,9 @@ type Model struct {
 
 	// Intro animation state
 	introPhase         int // 0 = show animation, 1 = show main UI
-	animationType      int // which animation to display
-	animationFrame     int // current frame number
-	animationMaxFrames int // total frames for this animation
+	animationType      intro.AnimationType
+	animationFrame     int // current frame number (within current animation)
+	animationMaxFrames int // total frames for current animation
 }
 
 // buildVisualMapping creates a mapping from visual positions to array indices
@@ -79,8 +79,11 @@ func NewModel(manager *debt.Manager) (*Model, error) {
 		return nil, fmt.Errorf("failed to load items: %w", err)
 	}
 
-	// Initialize intro animation with random type
-	animType := rand.Intn(3) // 3 animation types: Lightning, Scan, AlertMode
+	// Seed random for any future randomized behaviors (kept local and deterministic-safe)
+	rand.Seed(time.Now().UnixNano())
+
+	// Pick exactly one intro animation at random (Lightning, Scan, AlertMode).
+	animType := intro.AnimationType(rand.Intn(3))
 
 	m := &Model{
 		manager:            manager,
@@ -90,7 +93,7 @@ func NewModel(manager *debt.Manager) (*Model, error) {
 		introPhase:         0, // Start with intro animation
 		animationType:      animType,
 		animationFrame:     0,
-		animationMaxFrames: intro.GetMaxFrames(intro.AnimationType(animType)),
+		animationMaxFrames: intro.GetMaxFrames(animType),
 	}
 
 	// Build initial visual mapping

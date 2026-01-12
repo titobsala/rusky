@@ -13,7 +13,7 @@ func (m *Model) View() string {
 	// Show intro animation first
 	if m.introPhase == 0 {
 		return intro.RenderAnimation(
-			intro.AnimationType(m.animationType),
+			m.animationType,
 			m.animationFrame,
 		)
 	}

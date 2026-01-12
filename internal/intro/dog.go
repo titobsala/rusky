@@ -16,118 +16,85 @@ var (
 	gray         = lipgloss.Color("#888888")
 )
 
-// DogAtComputer represents a guard dog sitting at a computer workstation
-var DogAtComputer = []string{
-	"                                        ",
-	"         ┌─────────────┐                ",
-	"         │ [LOADING]   │                ",
-	"         │             │                ",
-	"         └─────────────┘                ",
-	"              ║║║                       ",
-	"         ▄▄▄▄▄▄▄▄▄                      ",
-	"        ▓░░░░░░░░▓                      ",
-	"       ▓░●    ●░░▓                      ",
-	"       ▓░░  ▼  ░░▓                      ",
-	"        ▓░▀▀▀▀░▓                        ",
-	"         ▓░░░░▓                         ",
-	"        ▓▓▓▓▓▓▓▓                        ",
-	"        ▓  ║║  ▓                        ",
-	"       ▓   ║║   ▓                       ",
-	"      ▓▓   ║║   ▓▓                      ",
-	"      ▀▀   ▀▀   ▀▀                      ",
+// STYLE 3: THE PEEKING DOG
+// Only the top half of the dog is visible. Very stable animation.
+
+var DogAtComputerRaw = `
+      [ LOADING... ]
+      
+       / \__
+      (    -\___
+      /         O
+     /   (_____/
+    /_____/   U`
+
+// DogAtComputerBarkRaw is a subtle alternate frame (same layout) used to simulate barking/talking.
+var DogAtComputerBarkRaw = `
+      [ LOADING... ]
+
+       / \__
+      (    @\___
+      /         O
+     /   (_____/
+    /_____/   U`
+
+var DogSleepingRaw = `
+       z Z z
+      
+       / \__
+      (    -\___
+      /         O
+     /   (_____/
+    /_____/   U`
+
+var DogAlertRaw = `
+       !     !
+       
+       / \__
+      (    O\___
+      /         O
+     /   (_____/
+    /_____/   U`
+
+var DogGuardingRaw = `
+      [ SECURITY ]
+      
+       / \__
+      (    ▼\___
+      /    |    O
+     /   (_____/
+    /_____/   U`
+
+var DogSniffingRaw = `
+      
+       / \__
+      (    >\___
+      /   *sniff*
+     /   (_____/
+    /_____/   U`
+
+func rawToLines(raw string) []string {
+	raw = strings.Trim(raw, "\n")
+	return strings.Split(raw, "\n")
 }
+
+// DogAtComputer represents a guard dog sitting at a computer workstation
+var DogAtComputer = rawToLines(DogAtComputerRaw)
+
+// DogAtComputerBark is an alternate frame for subtle barking/talking animation.
+var DogAtComputerBark = rawToLines(DogAtComputerBarkRaw)
 
 // DogSleeping represents a dog resting/sleeping
-var DogSleeping = []string{
-	"                                        ",
-	"        zzz   z   z                     ",
-	"       z                                ",
-	"                                        ",
-	"                                        ",
-	"                                        ",
-	"      ▄▄▄▄▄▄▄▄▄                         ",
-	"     ▓░░░░░░░░▓▄▄                       ",
-	"    ▓░─    ─░░░░▓                       ",
-	"    ▓░░  ▼  ░░░░▓                       ",
-	"     ▓░▀▀▀▀░░░▓                         ",
-	"      ▓░░░░░░▓                          ",
-	"     ▓▓▓▓▓▓▓▓▓▓▓                        ",
-	"    ▓          ▓                        ",
-	"   ▓  ▓▓    ▓▓  ▓                       ",
-	"   ▓  ▀▀    ▀▀  ▓                       ",
-	"   ▀▀           ▀▀                      ",
-}
+var DogSleeping = rawToLines(DogSleepingRaw)
 
 // DogAlert represents a dog with perked ears in alert state
-var DogAlert = []string{
-	"                                        ",
-	"        ▲       ▲                       ",
-	"       ▓▓       ▓▓                      ",
-	"        ▓▓     ▓▓                       ",
-	"                                        ",
-	"                                        ",
-	"      ▄▄▄▄▄▄▄▄▄▄▄                       ",
-	"     ▓░░░░░░░░░░▓                       ",
-	"    ▓░●      ●░░▓                       ",
-	"    ▓░░   ▼   ░░▓                       ",
-	"     ▓░ ▀▀▀▀ ░▓                         ",
-	"      ▓░░░░░▓                           ",
-	"     ▓▓▓▓▓▓▓▓▓                          ",
-	"     ▓   ║║  ▓                          ",
-	"    ▓    ║║   ▓                         ",
-	"   ▓▓    ║║   ▓▓                        ",
-	"   ▀▀    ▀▀   ▀▀                        ",
-}
+var DogAlert = rawToLines(DogAlertRaw)
 
 // DogGuarding represents a dog in sitting guard position
-var DogGuarding = []string{
-	"                                        ",
-	"        ▲       ▲                       ",
-	"       ▓▓▓     ▓▓▓                      ",
-	"        ▓▓▓   ▓▓▓                       ",
-	"         ▓▓▓▓▓▓▓                        ",
-	"                                        ",
-	"      ▄▄▄▄▄▄▄▄▄▄▄                       ",
-	"     ▓░░░░░░░░░░▓                       ",
-	"    ▓░●      ●░░▓                       ",
-	"    ▓░░   ▼   ░░▓                       ",
-	"     ▓░ ▀▀▀▀ ░▓                         ",
-	"      ▓░░░░░▓                           ",
-	"     ▓▓▓▓║▓▓▓▓                          ",
-	"     ▓   ║║   ▓                         ",
-	"    ▓    ║║    ▓                        ",
-	"   ▓▓    ║║    ▓▓                       ",
-	"   ▀▀    ▀▀    ▀▀                       ",
-}
+var DogGuarding = rawToLines(DogGuardingRaw)
 
 // DogSniffing represents a dog with nose down, sniffing
-var DogSniffing = []string{
-	"                                        ",
-	"        ▲    ▲                          ",
-	"       ▓▓    ▓▓                         ",
-	"        ▓▓  ▓▓                          ",
-	"      ▄▄▄▄▄▄▄▄▄                         ",
-	"     ▓░░░░░░░░▓                         ",
-	"    ▓░●    ●░░▓                         ",
-	"    ▓░░  ▼  ░░▓                         ",
-	"     ▓░▀▀▀▀░▓                           ",
-	"      ▓░░░░▓                            ",
-	"     ▓▓▓▓▓▓▓▓                           ",
-	"    ▓   ║║  ▓                           ",
-	"   ▓    ║║   ▓                          ",
-	"  ▓     ║║    ▓                         ",
-	"  ▓     ║║     ▓                        ",
-	"   ▓▓   ║║   ▓▓                         ",
-	"    ▼▼       ▼▼  ~~~                    ",
-}
-
-// Computer screen variations for loading bar animation
-var ComputerScreen = []string{
-	"         ┌─────────────┐                ",
-	"         │             │                ",
-	"         │             │                ",
-	"         └─────────────┘                ",
-}
+var DogSniffing = rawToLines(DogSniffingRaw)
 
 // Helper functions to apply colors to ASCII art
 

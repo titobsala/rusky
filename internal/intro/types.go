@@ -16,11 +16,11 @@ const (
 func GetMaxFrames(animType AnimationType) int {
 	switch animType {
 	case Lightning:
-		return 50 // ~2.5 seconds @ 20 FPS
+		return 60 // ~3.0 seconds @ 20 FPS - smoother transitions
 	case Scan:
-		return 40 // ~2.0 seconds @ 20 FPS
+		return 40 // ~2.0 seconds @ 20 FPS - keep as is
 	case AlertMode:
-		return 45 // ~2.25 seconds @ 20 FPS
+		return 55 // ~2.75 seconds @ 20 FPS - smoother transitions
 	default:
 		return 40
 	}
