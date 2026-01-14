@@ -20,7 +20,7 @@ func GetMaxFrames(animType AnimationType) int {
 	case Scan:
 		return 40 // ~2.0 seconds @ 20 FPS - keep as is
 	case AlertMode:
-		return 55 // ~2.75 seconds @ 20 FPS - smoother transitions
+		return 69 // ~3.45 seconds @ 20 FPS - smoother transitions
 	default:
 		return 40
 	}

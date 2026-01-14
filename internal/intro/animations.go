@@ -179,7 +179,7 @@ func renderAlertMode(frame int) string {
 		output.WriteString(dog)
 
 		// Phase 2: Alert sound
-	} else if frame <= 18 {
+	} else if frame <= 32 {
 		dog := ApplyMidPurple(DogSleeping)
 		alert := "))) ALERT ((("
 		alertText := lipgloss.NewStyle().
@@ -193,14 +193,14 @@ func renderAlertMode(frame int) string {
 
 		output.WriteString("\n\n")
 		output.WriteString(alertText)
-		output.WriteString("\n")
+		output.WriteString("\n\n")
 		output.WriteString(title)
 		output.WriteString("\n\n")
 		output.WriteString(dog)
 
 		// Phase 3: Standing up, alert posture
-	} else if frame <= 30 {
-		dog := ColorizeByFrame(DogAlert, frame-19, 11)
+	} else if frame <= 44 {
+		dog := ColorizeByFrame(DogAlert, frame-33, 11)
 		title := RenderText("[ ACTIVATING ]", midPurple)
 
 		output.WriteString("\n\n")
@@ -209,14 +209,14 @@ func renderAlertMode(frame int) string {
 		output.WriteString(dog)
 
 		// Phase 4: Guard position
-	} else if frame <= 36 {
+	} else if frame <= 50 {
 		dog := ApplyBrightPurple(DogGuarding)
 		output.WriteString("\n\n")
 		output.WriteString(dog)
 
 		// Phase 5: Purple gradient sweep with "ON DUTY"
-	} else if frame <= 48 {
-		dog := ColorizeByFrame(DogGuarding, frame-37, 11)
+	} else if frame <= 62 {
+		dog := ColorizeByFrame(DogGuarding, frame-51, 11)
 		title := RenderText("ON DUTY", brightPurple)
 		subtitle := RenderText("Guarding Code Quality", white)
 
