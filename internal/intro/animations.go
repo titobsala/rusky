@@ -1,0 +1,245 @@
+package intro
+
+import (
+	"fmt"
+	"strings"
+
+	"github.com/charmbracelet/lipgloss"
+)
+
+// RenderAnimation is the main dispatcher that renders the appropriate animation based on type and frame
+func RenderAnimation(animType AnimationType, frame int) string {
+	switch animType {
+	case Lightning:
+		return renderLightning(frame)
+	case Scan:
+		return renderScan(frame)
+	case AlertMode:
+		return renderAlertMode(frame)
+	default:
+		return renderLightning(frame)
+	}
+}
+
+// renderLightning implements the "Guard Dog at Computer" animation with loading bar
+// Phase 1 (0-18): Dog at computer with empty bar, dark purple
+// Phase 2 (19-36): Progress bar fills 0-100%, gradient to brighter purple
+// Phase 3 (37-40): Complete bar with "READY TO GUARD" message
+// Phase 4 (41-51): Glitch transition with purple morphing
+// Phase 5 (52+): Bright purple with glow, "SYSTEM ARMED" status
+func renderLightning(frame int) string {
+	var output strings.Builder
+
+	// Phase 1: Initial state with empty progress bar
+	if frame <= 18 {
+		art := DogAtComputer
+		if frame%2 == 1 {
+			art = DogAtComputerBark
+		}
+		dog := ColorizeByFrame(art, frame, 18)
+		bar := RenderProgressBar(0)
+
+		output.WriteString("\n\n")
+		output.WriteString(dog)
+		output.WriteString("\n")
+		output.WriteString(lipgloss.NewStyle().Width(40).Align(lipgloss.Center).Render(bar))
+
+		// Phase 2: Progress bar filling
+	} else if frame <= 36 {
+		// Calculate progress (0-100%)
+		progress := ((frame - 19) * 100) / 17
+
+		// Gradient effect as progress increases
+		art := DogAtComputer
+		if frame%2 == 1 {
+			art = DogAtComputerBark
+		}
+		dog := ColorizeByFrame(art, frame-19, 17)
+		bar := RenderProgressBar(progress)
+
+		output.WriteString("\n\n")
+		output.WriteString(dog)
+		output.WriteString("\n")
+		output.WriteString(lipgloss.NewStyle().Width(40).Align(lipgloss.Center).Render(bar))
+
+		// Phase 3: Complete with ready message
+	} else if frame <= 40 {
+		dog := ApplyBrightPurple(DogAtComputer)
+		bar := RenderProgressBar(100)
+		title := RenderText("READY TO GUARD", brightPurple)
+
+		output.WriteString("\n\n")
+		output.WriteString(title)
+		output.WriteString("\n\n")
+		output.WriteString(dog)
+		output.WriteString("\n")
+		output.WriteString(lipgloss.NewStyle().Width(40).Align(lipgloss.Center).Render(bar))
+
+		// Phase 4: Glitch transition
+	} else if frame <= 51 {
+		// Oscillate between colors for glitch effect
+		var dog string
+		if frame%2 == 0 {
+			dog = ApplyBrightPurple(DogAtComputer)
+		} else {
+			dog = ApplyMidPurple(DogAtComputer)
+		}
+
+		title := RenderText("SYSTEM CHECK...", white)
+
+		output.WriteString("\n\n")
+		output.WriteString(title)
+		output.WriteString("\n\n")
+		output.WriteString(dog)
+
+		// Phase 5: Final glow state
+	} else {
+		dog := ApplyGlow(DogAtComputer)
+		title := RenderText("✓ SYSTEM ARMED ✓", brightPurple)
+		subtitle := RenderText("Technical Debt Detection Active", gray)
+
+		output.WriteString("\n\n")
+		output.WriteString(title)
+		output.WriteString("\n")
+		output.WriteString(subtitle)
+		output.WriteString("\n\n")
+		output.WriteString(dog)
+	}
+
+	return output.String()
+}
+
+// renderScan implements the "Dog Sniffing Out Debt" line-by-line scanning animation
+// Progressive scanning with percentage counter
+func renderScan(frame int) string {
+	var output strings.Builder
+
+	// Calculate scan progress
+	totalLines := len(DogSniffing)
+	scannedLines := min((frame*totalLines)/GetMaxFrames(Scan), totalLines)
+
+	// Calculate percentage
+	percent := min((frame*100)/GetMaxFrames(Scan), 100)
+
+	title := RenderText(fmt.Sprintf("DEBT SCAN: %d%%", percent), white)
+
+	output.WriteString("\n\n")
+	output.WriteString(title)
+	output.WriteString("\n\n")
+
+	// Render dog with progressive color application
+	for i, line := range DogSniffing {
+		var styledLine string
+		if i < scannedLines {
+			// Already scanned - bright purple
+			styledLine = lipgloss.NewStyle().Foreground(brightPurple).Render(line)
+		} else if i == scannedLines {
+			// Currently scanning - white highlight
+			styledLine = lipgloss.NewStyle().Foreground(white).Bold(true).Render(line)
+		} else {
+			// Not yet scanned - dark purple
+			styledLine = lipgloss.NewStyle().Foreground(darkPurple).Render(line)
+		}
+		output.WriteString(styledLine)
+		output.WriteString("\n")
+	}
+
+	// Add scanning indicator
+	if percent < 100 {
+		indicator := RenderText(">>> SNIFFING FOR TECHNICAL DEBT <<<", midPurple)
+		output.WriteString("\n")
+		output.WriteString(indicator)
+	} else {
+		complete := RenderText("✓ SCAN COMPLETE ✓", brightPurple)
+		output.WriteString("\n")
+		output.WriteString(complete)
+	}
+
+	return output.String()
+}
+
+// renderAlertMode implements the "Sleeping to Guard" transition animation
+// Phase 1 (0-12): Dog sleeping, dark purple with zzz
+// Phase 2 (13-18): Alert waves, ears perk up
+// Phase 3 (19-30): Dog stands up, eyes open
+// Phase 4 (31-36): Guard position
+// Phase 5 (37-48): Purple gradient sweep, "ON DUTY"
+// Phase 6 (49+): Final glow, ready state
+func renderAlertMode(frame int) string {
+	var output strings.Builder
+
+	// Phase 1: Sleeping
+	if frame <= 12 {
+		dog := ApplyDarkPurple(DogSleeping)
+		title := RenderText("[ STANDBY MODE ]", gray)
+
+		output.WriteString("\n\n")
+		output.WriteString(title)
+		output.WriteString("\n\n")
+		output.WriteString(dog)
+
+		// Phase 2: Alert sound
+	} else if frame <= 32 {
+		dog := ApplyMidPurple(DogSleeping)
+		alert := "))) ALERT ((("
+		alertText := lipgloss.NewStyle().
+			Foreground(white).
+			Bold(true).
+			Width(40).
+			Align(lipgloss.Center).
+			Render(alert)
+
+		title := RenderText("[ ALERT DETECTED ]", midPurple)
+
+		output.WriteString("\n\n")
+		output.WriteString(alertText)
+		output.WriteString("\n\n")
+		output.WriteString(title)
+		output.WriteString("\n\n")
+		output.WriteString(dog)
+
+		// Phase 3: Standing up, alert posture
+	} else if frame <= 44 {
+		dog := ColorizeByFrame(DogAlert, frame-33, 11)
+		title := RenderText("[ ACTIVATING ]", midPurple)
+
+		output.WriteString("\n\n")
+		output.WriteString(title)
+		output.WriteString("\n\n")
+		output.WriteString(dog)
+
+		// Phase 4: Guard position
+	} else if frame <= 50 {
+		dog := ApplyBrightPurple(DogGuarding)
+		output.WriteString("\n\n")
+		output.WriteString(dog)
+
+		// Phase 5: Purple gradient sweep with "ON DUTY"
+	} else if frame <= 62 {
+		dog := ColorizeByFrame(DogGuarding, frame-51, 11)
+		title := RenderText("ON DUTY", brightPurple)
+		subtitle := RenderText("Guarding Code Quality", white)
+
+		output.WriteString("\n\n")
+		output.WriteString(title)
+		output.WriteString("\n")
+		output.WriteString(subtitle)
+		output.WriteString("\n\n")
+		output.WriteString(dog)
+
+		// Phase 6: Final glow
+	} else {
+		dog := ApplyGlow(DogGuarding)
+		title := RenderText("✓ GUARD MODE ACTIVE ✓", brightPurple)
+		subtitle := RenderText("Technical Debt Monitoring Enabled", gray)
+
+		output.WriteString("\n\n")
+		output.WriteString(title)
+		output.WriteString("\n")
+		output.WriteString(subtitle)
+		output.WriteString("\n\n")
+		output.WriteString(dog)
+	}
+
+	return output.String()
+}
