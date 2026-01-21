@@ -24,7 +24,7 @@ func (m *Model) View() string {
 
 	var b strings.Builder
 
-	header := titleStyle.Render("Rusky - Technical Debt Manager v0.2.1")
+	header := titleStyle.Render("Rusky - Technical Debt Manager v0.2.2")
 	b.WriteString(header)
 	b.WriteString("\n\n")
 
@@ -38,41 +38,47 @@ func (m *Model) View() string {
 		return m.renderDeleteConfirmation()
 	}
 
-	openCount := m.getOpenCount()
+	// Render Filter/Sort Status
+	var filterStatus []string
+	if m.filterOpts.Status != "all" {
+		filterStatus = append(filterStatus, fmt.Sprintf("Status:%s", m.filterOpts.Status))
+	}
+	if m.filterOpts.DateRange != "all" {
+		filterStatus = append(filterStatus, fmt.Sprintf("Date:%s", m.filterOpts.DateRange))
+	}
+	if m.filterOpts.PathPattern != "" {
+		val := m.filterOpts.PathPattern
+		if val == "scanned" {
+			filterStatus = append(filterStatus, "Path:Scanned")
+		} else {
+			filterStatus = append(filterStatus, fmt.Sprintf("Path:%s", val))
+		}
+	}
 
-	b.WriteString(subtitleStyle.Render(fmt.Sprintf("Open Items (%d)", openCount)))
-	b.WriteString("\n")
+	// Always show sort
+	sortIcon := "↓" // asc
+	if m.sortOpts.Direction == "desc" {
+		sortIcon = "↑"
+	}
+	filterStatus = append(filterStatus, fmt.Sprintf("Sort:%s%s", m.sortOpts.Field, sortIcon))
 
-	if openCount == 0 {
-		b.WriteString(emptyStateStyle.Render("No open items"))
+	filterStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#626262")).Italic(true)
+	b.WriteString(filterStyle.Render(strings.Join(filterStatus, " | ")))
+	b.WriteString("\n\n")
+
+	// Render List
+	if len(m.visualToArray) == 0 {
+		b.WriteString(emptyStateStyle.Render("No items found matching current filters."))
 		b.WriteString("\n")
 	} else {
-		for visualPos := 0; visualPos < openCount; visualPos++ {
-			arrayIndex := m.visualToArray[visualPos]
+		for visualPos, arrayIndex := range m.visualToArray {
 			b.WriteString(m.renderItem(arrayIndex, visualPos, visualPos+1))
 		}
 	}
 
 	b.WriteString("\n")
 
-	completedCount := len(m.visualToArray) - openCount
-	b.WriteString(subtitleStyle.Render(fmt.Sprintf("Completed Items (%d)", completedCount)))
-	b.WriteString("\n")
-
-	if completedCount == 0 {
-		b.WriteString(emptyStateStyle.Render("No completed items"))
-		b.WriteString("\n")
-	} else {
-		for visualPos := openCount; visualPos < len(m.visualToArray); visualPos++ {
-			arrayIndex := m.visualToArray[visualPos]
-			displayIndex := visualPos - openCount + 1
-			b.WriteString(m.renderItem(arrayIndex, visualPos, displayIndex))
-		}
-	}
-
-	b.WriteString("\n")
-
-	footer := statusBarStyle.Render("↑/↓: Navigate | Enter/Space: Toggle Complete | d: Delete | q/Esc: Quit")
+	footer := statusBarStyle.Render("↑/↓: Nav | Enter: Toggle | d: Delete | f:Filter t:Time p:Path s:Sort o:Order | q: Quit")
 	b.WriteString(footer)
 
 	return b.String()

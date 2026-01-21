@@ -3,6 +3,8 @@ package tui
 import (
 	"fmt"
 	"math/rand"
+	"sort"
+	"strings"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -24,6 +26,10 @@ type Model struct {
 	height        int
 	quitting      bool
 
+	// Filter and Sort state
+	filterOpts debt.FilterOptions
+	sortOpts   debt.SortOptions
+
 	// Delete confirmation state
 	showDeleteConfirm bool
 	deleteTargetIndex int // Array index of item to delete
@@ -36,33 +42,115 @@ type Model struct {
 }
 
 // buildVisualMapping creates a mapping from visual positions to array indices
-// Visual order: open items first, then completed items
+// Applies current filters and sort options
 func (m *Model) buildVisualMapping() {
-	openIndices := make([]int, 0, len(m.items))
-	completedIndices := make([]int, 0, len(m.items))
+	var indices []int
 
+	now := time.Now()
+	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+
+	// 1. Filter
 	for i, item := range m.items {
-		if item.IsCompleted() {
-			completedIndices = append(completedIndices, i)
-		} else {
-			openIndices = append(openIndices, i)
+		// Status Filter
+		if m.filterOpts.Status != "" && m.filterOpts.Status != "all" {
+			if string(item.Status) != m.filterOpts.Status {
+				continue
+			}
 		}
+
+		// Date Filter
+		if m.filterOpts.DateRange != "" && m.filterOpts.DateRange != "all" {
+			itemDate := item.CreatedAt
+			if m.filterOpts.DateRange == "today" {
+				if itemDate.Before(today) {
+					continue
+				}
+			} else if m.filterOpts.DateRange == "week" {
+				weekAgo := now.AddDate(0, 0, -7)
+				if itemDate.Before(weekAgo) {
+					continue
+				}
+			} else if m.filterOpts.DateRange == "month" {
+				monthAgo := now.AddDate(0, 0, -30)
+				if itemDate.Before(monthAgo) {
+					continue
+				}
+			}
+		}
+
+		// Path Filter
+		if m.filterOpts.PathPattern != "" {
+			if m.filterOpts.PathPattern == "scanned" {
+				if !item.IsScanned {
+					continue
+				}
+			} else {
+				if item.FilePath == nil || !strings.Contains(strings.ToLower(*item.FilePath), strings.ToLower(m.filterOpts.PathPattern)) {
+					continue
+				}
+			}
+		}
+
+		indices = append(indices, i)
 	}
 
-	m.visualToArray = make([]int, 0, len(m.items))
-	m.visualToArray = append(m.visualToArray, openIndices...)
-	m.visualToArray = append(m.visualToArray, completedIndices...)
-}
+	// 2. Sort
+	sort.SliceStable(indices, func(i, j int) bool {
+		idxA := indices[i]
+		idxB := indices[j]
+		a := m.items[idxA]
+		b := m.items[idxB]
 
-// getOpenCount returns the number of open items
-func (m *Model) getOpenCount() int {
-	count := 0
-	for _, item := range m.items {
-		if !item.IsCompleted() {
-			count++
+		less := false
+
+		switch m.sortOpts.Field {
+		case "date":
+			if a.CreatedAt.Equal(b.CreatedAt) {
+				return a.ID < b.ID
+			}
+			less = a.CreatedAt.Before(b.CreatedAt)
+		case "path":
+			pathA := ""
+			if a.FilePath != nil {
+				pathA = *a.FilePath
+			}
+			pathB := ""
+			if b.FilePath != nil {
+				pathB = *b.FilePath
+			}
+			if pathA == pathB {
+				return a.ID < b.ID
+			}
+			less = pathA < pathB
+		case "status":
+			if a.Status == b.Status {
+				return a.CreatedAt.Before(b.CreatedAt)
+			}
+			// Open (0) < Completed (1)
+			scoreA := 0
+			if a.Status == debt.StatusCompleted {
+				scoreA = 1
+			}
+			scoreB := 0
+			if b.Status == debt.StatusCompleted {
+				scoreB = 1
+			}
+			less = scoreA < scoreB
+		default:
+			// Default to date
+			if a.CreatedAt.Equal(b.CreatedAt) {
+				return a.ID < b.ID
+			}
+			less = a.CreatedAt.Before(b.CreatedAt)
 		}
-	}
-	return count
+
+		if m.sortOpts.Direction == "desc" {
+			return !less
+		}
+		return less
+	})
+
+	m.visualToArray = indices
 }
 
 // resetDeleteConfirmation clears the delete confirmation dialog state
@@ -94,6 +182,14 @@ func NewModel(manager *debt.Manager) (*Model, error) {
 		animationType:      animType,
 		animationFrame:     0,
 		animationMaxFrames: intro.GetMaxFrames(animType),
+		filterOpts: debt.FilterOptions{
+			Status:    "all",
+			DateRange: "all",
+		},
+		sortOpts: debt.SortOptions{
+			Field:     "status",
+			Direction: "asc",
+		},
 	}
 
 	// Build initial visual mapping

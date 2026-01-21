@@ -1,6 +1,6 @@
 # Rusky - Technical Debt Manager
 
-> **Current Version: v0.2.1** - Intro Animations
+> **Current Version: v0.2.2** - Filter & Sort Functionality
 
 [![CI](https://github.com/titobsala/rusky/workflows/CI/badge.svg)](https://github.com/titobsala/rusky/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/titobsala/rusky/workflows/CodeQL/badge.svg)](https://github.com/titobsala/rusky/actions/workflows/codeql.yml)

@@ -74,6 +74,73 @@ func (m *Model) handleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.deleteTargetIndex = arrayIndex
 		}
 
+	case "f":
+		// Cycle status filter
+		switch m.filterOpts.Status {
+		case "all":
+			m.filterOpts.Status = "open"
+		case "open":
+			m.filterOpts.Status = "completed"
+		case "completed":
+			m.filterOpts.Status = "all"
+		default:
+			m.filterOpts.Status = "all"
+		}
+		m.buildVisualMapping()
+		m.cursor = 0
+
+	case "t":
+		// Cycle date filter
+		switch m.filterOpts.DateRange {
+		case "all":
+			m.filterOpts.DateRange = "today"
+		case "today":
+			m.filterOpts.DateRange = "week"
+		case "week":
+			m.filterOpts.DateRange = "month"
+		case "month":
+			m.filterOpts.DateRange = "all"
+		default:
+			m.filterOpts.DateRange = "all"
+		}
+		m.buildVisualMapping()
+		m.cursor = 0
+
+	case "p":
+		// Toggle path filter (scanned only)
+		if m.filterOpts.PathPattern == "" {
+			m.filterOpts.PathPattern = "scanned"
+		} else {
+			m.filterOpts.PathPattern = ""
+		}
+		m.buildVisualMapping()
+		m.cursor = 0
+
+	case "s":
+		// Cycle sort field
+		switch m.sortOpts.Field {
+		case "status":
+			m.sortOpts.Field = "date"
+		case "date":
+			m.sortOpts.Field = "path"
+		case "path":
+			m.sortOpts.Field = "status"
+		default:
+			m.sortOpts.Field = "status"
+		}
+		m.buildVisualMapping()
+		m.cursor = 0
+
+	case "o":
+		// Cycle sort direction
+		if m.sortOpts.Direction == "asc" {
+			m.sortOpts.Direction = "desc"
+		} else {
+			m.sortOpts.Direction = "asc"
+		}
+		m.buildVisualMapping()
+		m.cursor = 0
+
 	case "enter", " ":
 		// Toggle completion status
 		if len(m.visualToArray) > 0 && m.cursor < len(m.visualToArray) {

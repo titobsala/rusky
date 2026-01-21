@@ -15,7 +15,8 @@ const (
 	Version010     = "0.1.0"
 	Version020     = "0.2.0"
 	Version021     = "0.2.1"
-	CurrentVersion = Version021
+	Version022     = "0.2.2"
+	CurrentVersion = Version022
 )
 
 // fileFormat represents the structure of the .rusky.json file
