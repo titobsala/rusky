@@ -10,42 +10,48 @@ import (
 	"github.com/tito-sala/rusky/internal/styles"
 )
 
-var statusFilter string
+var (
+	statusFilter string
+	dateFilter   string
+	pathFilter   string
+	sortField    string
+	sortOrder    string
+)
 
 var listCmd = &cobra.Command{
 	Use:   "list",
-	Short: "List technical debt items with optional filtering",
-	Long:  "Display technical debt items in a formatted table. Use --status to filter by item status.",
+	Short: "List technical debt items with optional filtering and sorting",
+	Long:  "Display technical debt items in a formatted table. Filter by status, date, or path, and sort the results.",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		items, err := manager.List()
 		if err != nil {
 			return fmt.Errorf("failed to list items: %w", err)
 		}
 
-		// Validate status filter
+		// Validate status filter (basic check, though FilterAndSort handles it safely)
 		validStatuses := map[string]bool{"all": true, "open": true, "completed": true}
 		if !validStatuses[statusFilter] {
 			return fmt.Errorf("invalid status '%s': must be 'all', 'open', or 'completed'", statusFilter)
 		}
 
-		// Apply status filter
-		filteredItems := items
-		if statusFilter != "all" {
-			filteredItems = []debt.DebtItem{}
-			targetStatus := debt.StatusOpen
-			if statusFilter == "completed" {
-				targetStatus = debt.StatusCompleted
-			}
-			for _, item := range items {
-				if item.Status == targetStatus {
-					filteredItems = append(filteredItems, item)
-				}
-			}
+		// Build options
+		filterOpts := debt.FilterOptions{
+			Status:      statusFilter,
+			DateRange:   dateFilter,
+			PathPattern: pathFilter,
 		}
 
+		sortOpts := debt.SortOptions{
+			Field:     sortField,
+			Direction: sortOrder,
+		}
+
+		// Apply filters and sort
+		filteredItems := debt.FilterAndSort(items, filterOpts, sortOpts)
+
 		if len(filteredItems) == 0 {
-			emptyMsg := styles.EmptyStateStyle.Render("No technical debt items found.")
-			hint := styles.EmptyStateStyle.Render("Use 'rusky add <description>' to add your first item.")
+			emptyMsg := styles.EmptyStateStyle.Render("No technical debt items found matching your criteria.")
+			hint := styles.EmptyStateStyle.Render("Try adjusting your filters or use 'rusky add <description>' to add a new item.")
 			fmt.Println(emptyMsg)
 			fmt.Println(hint)
 			return nil
@@ -122,6 +128,9 @@ var listCmd = &cobra.Command{
 }
 
 func init() {
-	listCmd.Flags().StringVar(&statusFilter, "status", "all",
-		"Filter by status: open, completed, or all")
+	listCmd.Flags().StringVar(&statusFilter, "status", "all", "Filter by status: open, completed, or all")
+	listCmd.Flags().StringVar(&dateFilter, "date", "all", "Filter by creation date: today, week, month, or all")
+	listCmd.Flags().StringVar(&pathFilter, "path", "", "Filter by file path (substring match or 'scanned')")
+	listCmd.Flags().StringVar(&sortField, "sort", "status", "Sort field: status, date, path")
+	listCmd.Flags().StringVar(&sortOrder, "order", "asc", "Sort order: asc, desc")
 }
