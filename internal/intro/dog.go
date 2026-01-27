@@ -45,7 +45,7 @@ func loadAnimation() {
 	width := 60 // Fixed width for the intro
 	bounds := g.Image[0].Bounds()
 	canvas := image.NewRGBA(bounds)
-	
+
 	ratio := float64(bounds.Dy()) / float64(bounds.Dx())
 	targetHeight := int(float64(width) * ratio * 2)
 
@@ -53,7 +53,7 @@ func loadAnimation() {
 		drawOver(canvas, srcImg)
 		resized := resize.Resize(uint(width), uint(targetHeight), canvas, resize.Lanczos3)
 		preRenderedFrames = append(preRenderedFrames, renderImageToString(resized))
-		
+
 		if len(g.Disposal) > i && g.Disposal[i] == 2 {
 			for y := 0; y < bounds.Dy(); y++ {
 				for x := 0; x < bounds.Dx(); x++ {
@@ -104,7 +104,7 @@ func RenderProgressBar(percent int, width int) string {
 	if percent > 100 {
 		percent = 100
 	}
-	
+
 	filledCells := (percent * width) / 100
 	var bar strings.Builder
 
