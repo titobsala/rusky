@@ -1,182 +1,129 @@
 package intro
 
 import (
+	_ "embed"
 	"fmt"
+	"image"
+	"image/color"
+	"image/gif"
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
+	"github.com/nfnt/resize"
 )
 
-// Color definitions for purple gradient theme
+//go:embed animation.gif
+var animationData []byte
+
 var (
-	darkPurple   = lipgloss.Color("#4A3A6B")
-	midPurple    = lipgloss.Color("#6647A3")
-	brightPurple = lipgloss.Color("#7D56F4")
-	white        = lipgloss.Color("#FFFFFF")
-	gray         = lipgloss.Color("#888888")
+	// Gradient colors for the loading bar
+	barGradient = []string{
+		"#292f56", "#2b3960", "#2c446b", "#2d5277", "#2e6282",
+		"#2f758e", "#2f8c9b", "#2ea5a7", "#2db5a7", "#2cc2a1",
+		"#2bd097", "#2ed989", "#35de7b", "#3de36d", "#44e860",
+		"#4cec54", "#60f055", "#7af45d", "#94f766", "#acfa70",
+	}
+	white = lipgloss.Color("#FFFFFF")
 )
 
-// STYLE 3: THE PEEKING DOG
-// Only the top half of the dog is visible. Very stable animation.
+var (
+	preRenderedFrames []string
+	animationDelay    int // in frames (approx)
+)
 
-var DogAtComputerRaw = `
-      [ LOADING... ]
-      
-       / \__
-      (    -\___
-      /         O
-     /   (_____/
-    /_____/   U`
-
-// DogAtComputerBarkRaw is a subtle alternate frame (same layout) used to simulate barking/talking.
-var DogAtComputerBarkRaw = `
-      [ LOADING... ]
-
-       / \__
-      (    @\___
-      /         O
-     /   (_____/
-    /_____/   U`
-
-var DogSleepingRaw = `
-       z Z z
-      
-       / \__
-      (    -\___
-      /         O
-     /   (_____/
-    /_____/   U`
-
-var DogAlertRaw = `
-       !     !
-       
-       / \__
-      (    O\___
-      /         O
-     /   (_____/
-    /_____/   U`
-
-var DogGuardingRaw = `
-      [ SECURITY ]
-      
-       / \__
-      (    ▼\___
-      /    |    O
-     /   (_____/
-    /_____/   U`
-
-var DogSniffingRaw = `
-      
-       / \__
-      (    >\___
-      /   *sniff*
-     /   (_____/
-    /_____/   U`
-
-func rawToLines(raw string) []string {
-	raw = strings.Trim(raw, "\n")
-	return strings.Split(raw, "\n")
+func init() {
+	loadAnimation()
 }
 
-// DogAtComputer represents a guard dog sitting at a computer workstation
-var DogAtComputer = rawToLines(DogAtComputerRaw)
-
-// DogAtComputerBark is an alternate frame for subtle barking/talking animation.
-var DogAtComputerBark = rawToLines(DogAtComputerBarkRaw)
-
-// DogSleeping represents a dog resting/sleeping
-var DogSleeping = rawToLines(DogSleepingRaw)
-
-// DogAlert represents a dog with perked ears in alert state
-var DogAlert = rawToLines(DogAlertRaw)
-
-// DogGuarding represents a dog in sitting guard position
-var DogGuarding = rawToLines(DogGuardingRaw)
-
-// DogSniffing represents a dog with nose down, sniffing
-var DogSniffing = rawToLines(DogSniffingRaw)
-
-// Helper functions to apply colors to ASCII art
-
-// ApplyDarkPurple applies dark purple color to the entire ASCII art
-func ApplyDarkPurple(art []string) string {
-	style := lipgloss.NewStyle().Foreground(darkPurple)
-	return style.Render(strings.Join(art, "\n"))
-}
-
-// ApplyMidPurple applies mid-range purple color to the entire ASCII art
-func ApplyMidPurple(art []string) string {
-	style := lipgloss.NewStyle().Foreground(midPurple)
-	return style.Render(strings.Join(art, "\n"))
-}
-
-// ApplyBrightPurple applies bright purple color (Rusky's primary color) to the entire ASCII art
-func ApplyBrightPurple(art []string) string {
-	style := lipgloss.NewStyle().Foreground(brightPurple)
-	return style.Render(strings.Join(art, "\n"))
-}
-
-// ApplyWhite applies white color to the entire ASCII art
-func ApplyWhite(art []string) string {
-	style := lipgloss.NewStyle().Foreground(white)
-	return style.Render(strings.Join(art, "\n"))
-}
-
-// ApplyGray applies gray color to the entire ASCII art
-func ApplyGray(art []string) string {
-	style := lipgloss.NewStyle().Foreground(gray)
-	return style.Render(strings.Join(art, "\n"))
-}
-
-// ApplyGlow applies a glow effect by rendering with bold and bright purple
-func ApplyGlow(art []string) string {
-	style := lipgloss.NewStyle().
-		Foreground(brightPurple).
-		Bold(true)
-	return style.Render(strings.Join(art, "\n"))
-}
-
-// ColorizeByFrame applies color based on animation frame for gradient effects
-func ColorizeByFrame(art []string, frame int, maxFrames int) string {
-	// Calculate gradient position (0.0 to 1.0)
-	progress := float64(frame) / float64(maxFrames)
-
-	// Apply color based on progress through gradient
-	if progress < 0.33 {
-		return ApplyDarkPurple(art)
-	} else if progress < 0.66 {
-		return ApplyMidPurple(art)
+func loadAnimation() {
+	reader := strings.NewReader(string(animationData))
+	g, err := gif.DecodeAll(reader)
+	if err != nil {
+		return
 	}
-	return ApplyBrightPurple(art)
+
+	width := 60 // Fixed width for the intro
+	bounds := g.Image[0].Bounds()
+	canvas := image.NewRGBA(bounds)
+	
+	ratio := float64(bounds.Dy()) / float64(bounds.Dx())
+	targetHeight := int(float64(width) * ratio * 2)
+
+	for i, srcImg := range g.Image {
+		drawOver(canvas, srcImg)
+		resized := resize.Resize(uint(width), uint(targetHeight), canvas, resize.Lanczos3)
+		preRenderedFrames = append(preRenderedFrames, renderImageToString(resized))
+		
+		if len(g.Disposal) > i && g.Disposal[i] == 2 {
+			for y := 0; y < bounds.Dy(); y++ {
+				for x := 0; x < bounds.Dx(); x++ {
+					canvas.Set(x, y, color.Transparent)
+				}
+			}
+		}
+	}
 }
 
-// RenderProgressBar creates a loading bar with specified percentage
-func RenderProgressBar(percent int) string {
-	barWidth := 10
-	filled := (percent * barWidth) / 100
-	empty := barWidth - filled
+func drawOver(dst *image.RGBA, src image.Image) {
+	b := src.Bounds()
+	for y := b.Min.Y; y < b.Max.Y; y++ {
+		for x := b.Min.X; x < b.Max.X; x++ {
+			c := src.At(x, y)
+			_, _, _, a := c.RGBA()
+			if a > 0 {
+				dst.Set(x, y, c)
+			}
+		}
+	}
+}
 
+func renderImageToString(img image.Image) string {
+	var sb strings.Builder
+	b := img.Bounds()
+	for y := b.Min.Y; y < b.Max.Y; y += 2 {
+		for x := b.Min.X; x < b.Max.X; x++ {
+			cTop := img.At(x, y)
+			r1, g1, b1, _ := cTop.RGBA()
+			var r2, g2, b2 uint32
+			if y+1 < b.Max.Y {
+				cBot := img.At(x, y+1)
+				r2, g2, b2, _ = cBot.RGBA()
+			}
+			style := lipgloss.NewStyle().
+				Foreground(lipgloss.Color(fmt.Sprintf("#%02x%02x%02x", r1>>8, g1>>8, b1>>8))).
+				Background(lipgloss.Color(fmt.Sprintf("#%02x%02x%02x", r2>>8, g2>>8, b2>>8)))
+			sb.WriteString(style.Render("▀"))
+		}
+		sb.WriteString("\n")
+	}
+	return sb.String()
+}
+
+// RenderProgressBar creates a loading bar with the specified gradient
+func RenderProgressBar(percent int, width int) string {
+	if percent > 100 {
+		percent = 100
+	}
+	
+	filledCells := (percent * width) / 100
 	var bar strings.Builder
-	bar.WriteString("[")
-	for range filled {
-		bar.WriteString("█")
-	}
-	for range empty {
-		bar.WriteString("░")
-	}
-	bar.WriteString("]")
 
-	style := lipgloss.NewStyle().Foreground(brightPurple)
-	percentText := lipgloss.NewStyle().Foreground(white).Render(fmt.Sprintf("%d%% ", percent))
-	return style.Render(bar.String()) + " " + percentText
+	for i := 0; i < width; i++ {
+		if i < filledCells {
+			// Calculate gradient index
+			gradIdx := (i * len(barGradient)) / width
+			color := barGradient[gradIdx]
+			bar.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color(color)).Render("█"))
+		} else {
+			bar.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("#333333")).Render("░"))
+		}
+	}
+
+	percentText := lipgloss.NewStyle().Foreground(white).Bold(true).Render(fmt.Sprintf(" %d%%", percent))
+	return bar.String() + percentText
 }
 
-// RenderText renders centered text with specified color
-func RenderText(text string, color lipgloss.Color) string {
-	style := lipgloss.NewStyle().
-		Foreground(color).
-		Bold(true).
-		Width(40).
-		Align(lipgloss.Center)
-	return style.Render(text)
+// RenderText renders centered text
+func RenderText(text string, width int) string {
+	return lipgloss.NewStyle().Width(width).Align(lipgloss.Center).Bold(true).Render(text)
 }

@@ -170,8 +170,8 @@ func NewModel(manager *debt.Manager) (*Model, error) {
 	// Seed random for any future randomized behaviors (kept local and deterministic-safe)
 	rand.Seed(time.Now().UnixNano())
 
-	// Pick exactly one intro animation at random (Lightning, Scan, AlertMode).
-	animType := intro.AnimationType(rand.Intn(3))
+	// Use the main GIF-based intro animation
+	animType := intro.Main
 
 	m := &Model{
 		manager:            manager,

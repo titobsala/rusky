@@ -4,24 +4,11 @@ package intro
 type AnimationType int
 
 const (
-	// Lightning represents the "Guard Dog at Computer" animation with loading bar
-	Lightning AnimationType = iota
-	// Scan represents the "Dog Sniffing Out Debt" line-by-line scanning animation
-	Scan
-	// AlertMode represents the "Sleeping to Guard" transition animation
-	AlertMode
+	// Main represents the high-resolution GIF animation
+	Main AnimationType = iota
 )
 
 // GetMaxFrames returns the total number of frames for a given animation type
 func GetMaxFrames(animType AnimationType) int {
-	switch animType {
-	case Lightning:
-		return 60 // ~3.0 seconds @ 20 FPS - smoother transitions
-	case Scan:
-		return 40 // ~2.0 seconds @ 20 FPS - keep as is
-	case AlertMode:
-		return 69 // ~3.45 seconds @ 20 FPS - smoother transitions
-	default:
-		return 40
-	}
+	return 80 // 4 seconds @ 20 FPS
 }
