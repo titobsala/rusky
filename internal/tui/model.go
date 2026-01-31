@@ -91,6 +91,24 @@ func (m *Model) buildVisualMapping() {
 			}
 		}
 
+		// Comment Type Filter
+		if len(m.filterOpts.CommentTypes) > 0 {
+			if item.CommentType == nil {
+				continue
+			}
+			// Check if item's comment type matches any of the filter types (case-insensitive)
+			matched := false
+			for _, filterType := range m.filterOpts.CommentTypes {
+				if strings.EqualFold(*item.CommentType, filterType) {
+					matched = true
+					break
+				}
+			}
+			if !matched {
+				continue
+			}
+		}
+
 		indices = append(indices, i)
 	}
 

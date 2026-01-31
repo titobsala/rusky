@@ -8,9 +8,10 @@ import (
 
 // FilterOptions defines criteria for filtering debt items
 type FilterOptions struct {
-	Status      string // "all", "open", "completed"
-	DateRange   string // "all", "today", "week", "month"
-	PathPattern string // substring match, or "scanned" for all scanned items
+	Status       string   // "all", "open", "completed"
+	DateRange    string   // "all", "today", "week", "month"
+	PathPattern  string   // substring match, or "scanned" for all scanned items
+	CommentTypes []string // Filter by comment types (e.g., ["TODO", "FIXME"])
 }
 
 // SortOptions defines criteria for sorting debt items
@@ -69,6 +70,24 @@ func FilterAndSort(items []DebtItem, filter FilterOptions, sortOpt SortOptions) 
 				if item.FilePath == nil || !strings.Contains(strings.ToLower(*item.FilePath), strings.ToLower(filter.PathPattern)) {
 					continue
 				}
+			}
+		}
+
+		// Comment Type Filter
+		if len(filter.CommentTypes) > 0 {
+			if item.CommentType == nil {
+				continue
+			}
+			// Check if item's comment type matches any of the filter types (case-insensitive)
+			matched := false
+			for _, filterType := range filter.CommentTypes {
+				if strings.EqualFold(*item.CommentType, filterType) {
+					matched = true
+					break
+				}
+			}
+			if !matched {
+				continue
 			}
 		}
 

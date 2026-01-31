@@ -18,6 +18,23 @@ type ScanResult struct {
 	Line        string // Full line content for preview
 }
 
+// DuplicateStatus represents the duplicate status of a scan result
+type DuplicateStatus int
+
+const (
+	StatusNew DuplicateStatus = iota
+	StatusDuplicate
+	StatusChanged
+)
+
+// ScanResultWithStatus extends ScanResult with duplicate detection info
+type ScanResultWithStatus struct {
+	ScanResult
+	Status       DuplicateStatus
+	ExistingID   string // ID of existing item if duplicate or changed
+	ExistingDesc string // Previous description if changed
+}
+
 // Scanner handles code scanning operations
 type Scanner struct {
 	patterns     []CommentPattern

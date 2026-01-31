@@ -24,7 +24,7 @@ func (m *Model) View() string {
 
 	var b strings.Builder
 
-	header := titleStyle.Render("Rusky - Technical Debt Manager v0.2.2")
+	header := titleStyle.Render("Rusky - Technical Debt Manager v0.3.0")
 	b.WriteString(header)
 	b.WriteString("\n\n")
 
@@ -54,6 +54,9 @@ func (m *Model) View() string {
 			filterStatus = append(filterStatus, fmt.Sprintf("Path:%s", val))
 		}
 	}
+	if len(m.filterOpts.CommentTypes) > 0 {
+		filterStatus = append(filterStatus, fmt.Sprintf("Type:%s", strings.Join(m.filterOpts.CommentTypes, ",")))
+	}
 
 	// Always show sort
 	sortIcon := "↓" // asc
@@ -78,7 +81,7 @@ func (m *Model) View() string {
 
 	b.WriteString("\n")
 
-	footer := statusBarStyle.Render("↑/↓: Nav | Enter: Toggle | d: Delete | f:Filter t:Time p:Path s:Sort o:Order | q: Quit")
+	footer := statusBarStyle.Render("↑/↓: Nav | Enter: Toggle | d: Delete | f:Filter t:Time p:Path c:Type s:Sort o:Order | q: Quit")
 	b.WriteString(footer)
 
 	return b.String()
