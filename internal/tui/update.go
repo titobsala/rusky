@@ -74,6 +74,15 @@ func (m *Model) handleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.deleteTargetIndex = arrayIndex
 		}
 
+	case "r":
+		// Reset all filters to defaults (preserves sort preferences)
+		m.filterOpts.Status = "all"
+		m.filterOpts.DateRange = "all"
+		m.filterOpts.PathPattern = ""
+		m.filterOpts.CommentTypes = []string{}
+		m.buildVisualMapping()
+		m.cursor = 0
+
 	case "f":
 		// Cycle status filter
 		switch m.filterOpts.Status {
@@ -117,19 +126,14 @@ func (m *Model) handleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.cursor = 0
 
 	case "c":
-		// Cycle comment type filter
-		// Cycle through: all -> TODO -> FIXME -> HACK -> XXX -> BUG -> NOTE -> all
+		// Cycle comment type filter (simplified to 5 most common options)
+		// Cycle through: all -> TODO -> FIXME -> HACK -> TODO+FIXME -> all
 		commentTypes := [][]string{
 			{},                // all (no filter)
 			{"TODO"},          // TODO only
 			{"FIXME"},         // FIXME only
 			{"HACK"},          // HACK only
-			{"XXX"},           // XXX only
-			{"BUG"},           // BUG only
-			{"NOTE"},          // NOTE only
-			{"TODO", "FIXME"}, // TODO + FIXME
-			{"HACK", "XXX"},   // HACK + XXX
-			{"BUG", "NOTE"},   // BUG + NOTE
+			{"TODO", "FIXME"}, // TODO + FIXME combined
 		}
 
 		// Find current filter position

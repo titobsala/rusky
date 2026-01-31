@@ -24,7 +24,7 @@ func (m *Model) View() string {
 
 	var b strings.Builder
 
-	header := titleStyle.Render("Rusky - Technical Debt Manager v0.3.0")
+	header := titleStyle.Render("Rusky - Technical Debt Manager v0.3.1")
 	b.WriteString(header)
 	b.WriteString("\n\n")
 
@@ -38,24 +38,28 @@ func (m *Model) View() string {
 		return m.renderDeleteConfirmation()
 	}
 
-	// Render Filter/Sort Status
+	// Render Filter/Sort Status with counts
 	var filterStatus []string
 	if m.filterOpts.Status != "all" {
-		filterStatus = append(filterStatus, fmt.Sprintf("Status:%s", m.filterOpts.Status))
+		idx, total := m.getStatusFilterIndex()
+		filterStatus = append(filterStatus, fmt.Sprintf("Status:%s(%d/%d)", m.filterOpts.Status, idx, total))
 	}
 	if m.filterOpts.DateRange != "all" {
-		filterStatus = append(filterStatus, fmt.Sprintf("Date:%s", m.filterOpts.DateRange))
+		idx, total := m.getDateFilterIndex()
+		filterStatus = append(filterStatus, fmt.Sprintf("Date:%s(%d/%d)", m.filterOpts.DateRange, idx, total))
 	}
 	if m.filterOpts.PathPattern != "" {
+		idx, total := m.getPathFilterIndex()
 		val := m.filterOpts.PathPattern
 		if val == "scanned" {
-			filterStatus = append(filterStatus, "Path:Scanned")
+			filterStatus = append(filterStatus, fmt.Sprintf("Path:Scanned(%d/%d)", idx, total))
 		} else {
-			filterStatus = append(filterStatus, fmt.Sprintf("Path:%s", val))
+			filterStatus = append(filterStatus, fmt.Sprintf("Path:%s(%d/%d)", val, idx, total))
 		}
 	}
 	if len(m.filterOpts.CommentTypes) > 0 {
-		filterStatus = append(filterStatus, fmt.Sprintf("Type:%s", strings.Join(m.filterOpts.CommentTypes, ",")))
+		idx, total := m.getCommentTypeFilterIndex()
+		filterStatus = append(filterStatus, fmt.Sprintf("Type:%s(%d/%d)", strings.Join(m.filterOpts.CommentTypes, ","), idx, total))
 	}
 
 	// Always show sort
@@ -63,7 +67,8 @@ func (m *Model) View() string {
 	if m.sortOpts.Direction == "desc" {
 		sortIcon = "↑"
 	}
-	filterStatus = append(filterStatus, fmt.Sprintf("Sort:%s%s", m.sortOpts.Field, sortIcon))
+	idx, total := m.getSortFilterIndex()
+	filterStatus = append(filterStatus, fmt.Sprintf("Sort:%s%s(%d/%d)", m.sortOpts.Field, sortIcon, idx, total))
 
 	filterStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#626262")).Italic(true)
 	b.WriteString(filterStyle.Render(strings.Join(filterStatus, " | ")))
@@ -81,7 +86,7 @@ func (m *Model) View() string {
 
 	b.WriteString("\n")
 
-	footer := statusBarStyle.Render("↑/↓: Nav | Enter: Toggle | d: Delete | f:Filter t:Time p:Path c:Type s:Sort o:Order | q: Quit")
+	footer := statusBarStyle.Render("↑↓:Navigate | Space:Toggle | d:Delete | f:Status t:Date p:Path c:Type | s:Sort o:Order r:Reset | q:Quit")
 	b.WriteString(footer)
 
 	return b.String()
