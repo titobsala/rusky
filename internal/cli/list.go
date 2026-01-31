@@ -3,6 +3,8 @@ package cli
 import (
 	"fmt"
 
+	"strings"
+
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/lipgloss/table"
 	"github.com/spf13/cobra"
@@ -14,6 +16,7 @@ var (
 	statusFilter string
 	dateFilter   string
 	pathFilter   string
+	typeFilter   string
 	sortField    string
 	sortOrder    string
 )
@@ -34,11 +37,22 @@ var listCmd = &cobra.Command{
 			return fmt.Errorf("invalid status '%s': must be 'all', 'open', or 'completed'", statusFilter)
 		}
 
+		// Parse comment types filter
+		var commentTypes []string
+		if typeFilter != "" {
+			commentTypes = strings.Split(typeFilter, ",")
+			// Trim whitespace from each type
+			for i, t := range commentTypes {
+				commentTypes[i] = strings.TrimSpace(t)
+			}
+		}
+
 		// Build options
 		filterOpts := debt.FilterOptions{
-			Status:      statusFilter,
-			DateRange:   dateFilter,
-			PathPattern: pathFilter,
+			Status:       statusFilter,
+			DateRange:    dateFilter,
+			PathPattern:  pathFilter,
+			CommentTypes: commentTypes,
 		}
 
 		sortOpts := debt.SortOptions{
@@ -131,6 +145,7 @@ func init() {
 	listCmd.Flags().StringVar(&statusFilter, "status", "all", "Filter by status: open, completed, or all")
 	listCmd.Flags().StringVar(&dateFilter, "date", "all", "Filter by creation date: today, week, month, or all")
 	listCmd.Flags().StringVar(&pathFilter, "path", "", "Filter by file path (substring match or 'scanned')")
+	listCmd.Flags().StringVar(&typeFilter, "type", "", "Filter by comment type: TODO, FIXME, HACK, XXX, BUG, NOTE (comma-separated)")
 	listCmd.Flags().StringVar(&sortField, "sort", "status", "Sort field: status, date, path")
 	listCmd.Flags().StringVar(&sortOrder, "order", "asc", "Sort order: asc, desc")
 }

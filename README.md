@@ -1,6 +1,6 @@
 # Rusky - Technical Debt Manager
 
-> **Current Version: v0.2.2** - Filter & Sort Functionality
+> **Current Version: v0.3.0** - Complete Filtering & Improved Scanning
 
 [![CI](https://github.com/titobsala/rusky/workflows/CI/badge.svg)](https://github.com/titobsala/rusky/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/titobsala/rusky/workflows/CodeQL/badge.svg)](https://github.com/titobsala/rusky/actions/workflows/codeql.yml)
@@ -95,8 +95,14 @@ rusky
 
 Scan your codebase for technical debt markers (TODO, FIXME, HACK, XXX, BUG, NOTE).
 
+**Duplicate Detection (v0.3.0):**
+Rusky now automatically detects duplicates when scanning:
+- **New items**: Added to tracking
+- **Duplicates**: Skipped silently (no changes detected)
+- **Changed descriptions**: Prompts for confirmation to update
+
 ```bash
-# Scan current directory
+# Scan current directory (with duplicate detection)
 rusky scan
 
 # Scan specific path
@@ -107,6 +113,12 @@ rusky scan --dry-run
 
 # Add all items without confirmation
 rusky scan --add-all
+
+# Force add all items, ignoring duplicates
+rusky scan --force-add
+
+# Auto-update changed descriptions without prompting
+rusky scan --update-all
 ```
 
 **Interactive Selection:**
@@ -131,6 +143,13 @@ Launch the interactive terminal UI to browse and manage your technical debt.
 **Keyboard shortcuts:**
 - `↑/↓` or `k/j` - Navigate between items
 - `Enter` or `Space` - Toggle completion status
+- `d` - Delete item
+- `f` - Cycle status filter (all/open/completed)
+- `t` - Cycle date filter (all/today/week/month)
+- `p` - Toggle path filter (scanned items only)
+- `c` - Cycle comment type filter (TODO/FIXME/HACK/XXX/BUG/NOTE/all)
+- `s` - Cycle sort field (status/date/path)
+- `o` - Cycle sort order (ascending/descending)
 - `q` or `Esc` - Quit
 
 #### `rusky add <description>`
@@ -155,7 +174,7 @@ rusky complete 47085ae2-3240-4fac-a853-5c1400109580
 
 #### `rusky list`
 
-Display all technical debt items in a formatted table with optional filtering.
+Display all technical debt items in a formatted table with optional filtering and sorting.
 
 ```bash
 # List all items
@@ -164,6 +183,28 @@ rusky list
 # Filter by status
 rusky list --status open
 rusky list --status completed
+
+# Filter by creation date
+rusky list --date today
+rusky list --date week
+rusky list --date month
+
+# Filter by file path
+rusky list --path src/
+rusky list --path scanned  # Show only scanned items
+
+# Filter by comment type (v0.3.0)
+rusky list --type TODO
+rusky list --type TODO,FIXME
+rusky list --type HACK,XXX,BUG
+
+# Sort results
+rusky list --sort date --order desc
+rusky list --sort path --order asc
+rusky list --sort status
+
+# Combine filters
+rusky list --status open --type FIXME --date week --sort date --order desc
 ```
 
 #### `rusky version`
@@ -220,30 +261,30 @@ This file is:
 
 ## Roadmap
 
-### v0.2.0 ✅ (Current Release)
-- ✅ Automatic scanning for TODO/FIXME/HACK comments in codebase
-- ✅ Interactive TUI for selecting scanned items
-- ✅ File path and line number tracking
-- ✅ Multi-language comment support
-- 🔄 Filter and sort functionality (partial - status filter implemented)
-- ⏳ Priority/tags for debt items (deferred to v0.3.0)
-- ⏳ Watch mode for continuous scanning (deferred to future release)
+### v0.3.0 ✅ (Current Release)
+- ✅ Complete filtering system (status, date, path, comment type)
+- ✅ Comment type filtering (TODO, FIXME, HACK, XXX, BUG, NOTE)
+- ✅ Duplicate detection in scanner (prevents re-adding same items)
+- ✅ Description change detection (prompts to update when comments change)
+- ✅ Interactive TUI with full keyboard navigation
+- ✅ Comprehensive sorting (by status, date, path)
 
-### v0.3.0 (Planned)
-- Enhanced filtering and sorting (by date, priority, tags)
+### v0.4.0 (Planned)
 - Priority levels (low, medium, high, critical)
 - Tags/labels for categorization
 - Export to other formats (CSV, Markdown, JSON)
+- Statistics dashboard (debt velocity, completion rate)
 
-### v0.4.0 (Planned)
+### v0.5.0 (Planned)
 - Integration with popular issue trackers (GitHub Issues, Jira)
 - Sync technical debt to external systems
+- Watch mode for continuous monitoring
 
 ### Future
 - Team sync capabilities
-- Dashboard with metrics (debt velocity, completion rate)
 - VS Code extension
-- Watch mode for continuous monitoring
+- Remote storage for team collaboration
+- Custom comment patterns via configuration
 
 ## Development
 

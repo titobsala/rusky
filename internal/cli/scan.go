@@ -13,8 +13,10 @@ import (
 )
 
 var (
-	dryRun bool
-	addAll bool
+	dryRun    bool
+	addAll    bool
+	forceAdd  bool
+	updateAll bool
 )
 
 var scanCmd = &cobra.Command{
@@ -45,12 +47,76 @@ func runScan(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("scan failed: %w", err)
 	}
 
-	fmt.Printf("\nScan complete: found %d items\n\n", len(results))
-
 	if len(results) == 0 {
-		fmt.Println("No technical debt markers found.")
+		fmt.Println("\nNo technical debt markers found.")
 		return nil
 	}
+
+	// Detect duplicates (unless --force-add is set)
+	var resultsWithStatus []scanner.ScanResultWithStatus
+	newCount := 0
+	duplicateCount := 0
+	changedCount := 0
+
+	if forceAdd {
+		// Convert all to new results
+		for _, r := range results {
+			resultsWithStatus = append(resultsWithStatus, scanner.ScanResultWithStatus{
+				ScanResult: r,
+				Status:     scanner.StatusNew,
+			})
+		}
+		newCount = len(results)
+	} else {
+		// Check for duplicates
+		for _, r := range results {
+			existing, err := manager.FindByLocation(r.FilePath, r.LineNumber)
+			if err != nil {
+				return fmt.Errorf("failed to check for duplicates: %w", err)
+			}
+
+			if existing == nil {
+				// New item
+				resultsWithStatus = append(resultsWithStatus, scanner.ScanResultWithStatus{
+					ScanResult: r,
+					Status:     scanner.StatusNew,
+				})
+				newCount++
+			} else if existing.Description != r.Description {
+				// Changed description
+				resultsWithStatus = append(resultsWithStatus, scanner.ScanResultWithStatus{
+					ScanResult:   r,
+					Status:       scanner.StatusChanged,
+					ExistingID:   existing.ID,
+					ExistingDesc: existing.Description,
+				})
+				changedCount++
+			} else {
+				// Duplicate (no change)
+				resultsWithStatus = append(resultsWithStatus, scanner.ScanResultWithStatus{
+					ScanResult: r,
+					Status:     scanner.StatusDuplicate,
+					ExistingID: existing.ID,
+				})
+				duplicateCount++
+			}
+		}
+	}
+
+	// Print summary
+	fmt.Printf("\nFound %d technical debt markers across %d files\n", len(results), countUniqueFiles(results))
+	if !forceAdd {
+		if duplicateCount > 0 {
+			fmt.Printf("%d duplicates skipped (no changes)\n", duplicateCount)
+		}
+		if changedCount > 0 {
+			fmt.Printf("%d items with changed descriptions\n", changedCount)
+		}
+		if newCount > 0 {
+			fmt.Printf("%d new items found\n", newCount)
+		}
+	}
+	fmt.Println()
 
 	summary := groupByType(results)
 	for typ, count := range summary {
@@ -64,11 +130,19 @@ func runScan(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	if addAll {
-		return addAllResults(results)
+	if addAll || forceAdd {
+		return addAllResultsWithStatus(resultsWithStatus)
 	}
 
 	return tui.RunScanSelector(manager, results)
+}
+
+func countUniqueFiles(results []scanner.ScanResult) int {
+	files := make(map[string]bool)
+	for _, r := range results {
+		files[r.FilePath] = true
+	}
+	return len(files)
 }
 
 func groupByType(results []scanner.ScanResult) map[string]int {
@@ -96,18 +170,67 @@ func printPreview(results []scanner.ScanResult) {
 	}
 }
 
-func addAllResults(results []scanner.ScanResult) error {
+func addAllResultsWithStatus(results []scanner.ScanResultWithStatus) error {
 	added := 0
+	updated := 0
+	skipped := 0
+
 	for _, result := range results {
-		if err := addScanResult(result); err != nil {
-			fmt.Fprintf(os.Stderr, "Warning: failed to add %s:%d: %v\n",
-				result.FilePath, result.LineNumber, err)
-			continue
+		switch result.Status {
+		case scanner.StatusNew:
+			if err := addScanResult(result.ScanResult); err != nil {
+				fmt.Fprintf(os.Stderr, "Warning: failed to add %s:%d: %v\n",
+					result.FilePath, result.LineNumber, err)
+				continue
+			}
+			added++
+
+		case scanner.StatusChanged:
+			if updateAll {
+				// Auto-update
+				if err := manager.UpdateDescription(result.ExistingID, result.Description); err != nil {
+					fmt.Fprintf(os.Stderr, "Warning: failed to update %s:%d: %v\n",
+						result.FilePath, result.LineNumber, err)
+					continue
+				}
+				updated++
+			} else {
+				// Prompt for confirmation
+				fmt.Printf("\n[CHANGED] %s:%d\n", result.FilePath, result.LineNumber)
+				fmt.Printf("  Old: %s\n", result.ExistingDesc)
+				fmt.Printf("  New: %s\n", result.Description)
+				fmt.Print("Update? (y/n): ")
+
+				var response string
+				fmt.Scanln(&response)
+				if response == "y" || response == "Y" {
+					if err := manager.UpdateDescription(result.ExistingID, result.Description); err != nil {
+						fmt.Fprintf(os.Stderr, "Warning: failed to update: %v\n", err)
+						continue
+					}
+					updated++
+				} else {
+					skipped++
+				}
+			}
+
+		case scanner.StatusDuplicate:
+			// Skip silently
+			skipped++
 		}
-		added++
 	}
 
-	fmt.Printf("Added %d items to .rusky.json\n", added)
+	fmt.Printf("\nSummary:\n")
+	if added > 0 {
+		fmt.Printf("  Added: %d new items\n", added)
+	}
+	if updated > 0 {
+		fmt.Printf("  Updated: %d changed descriptions\n", updated)
+	}
+	if skipped > 0 {
+		fmt.Printf("  Skipped: %d duplicates\n", skipped)
+	}
+
 	return nil
 }
 
@@ -138,4 +261,8 @@ func init() {
 		"Preview scan results without adding items")
 	scanCmd.Flags().BoolVar(&addAll, "add-all", false,
 		"Add all found items without confirmation")
+	scanCmd.Flags().BoolVar(&forceAdd, "force-add", false,
+		"Force add all items, ignoring duplicates")
+	scanCmd.Flags().BoolVar(&updateAll, "update-all", false,
+		"Automatically update all changed descriptions without prompting")
 }

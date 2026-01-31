@@ -116,6 +116,46 @@ func (m *Model) handleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.buildVisualMapping()
 		m.cursor = 0
 
+	case "c":
+		// Cycle comment type filter
+		// Cycle through: all -> TODO -> FIXME -> HACK -> XXX -> BUG -> NOTE -> all
+		commentTypes := [][]string{
+			{},                // all (no filter)
+			{"TODO"},          // TODO only
+			{"FIXME"},         // FIXME only
+			{"HACK"},          // HACK only
+			{"XXX"},           // XXX only
+			{"BUG"},           // BUG only
+			{"NOTE"},          // NOTE only
+			{"TODO", "FIXME"}, // TODO + FIXME
+			{"HACK", "XXX"},   // HACK + XXX
+			{"BUG", "NOTE"},   // BUG + NOTE
+		}
+
+		// Find current filter position
+		currentIdx := -1
+		for i, types := range commentTypes {
+			if len(types) == len(m.filterOpts.CommentTypes) {
+				match := true
+				for j, t := range types {
+					if j >= len(m.filterOpts.CommentTypes) || t != m.filterOpts.CommentTypes[j] {
+						match = false
+						break
+					}
+				}
+				if match {
+					currentIdx = i
+					break
+				}
+			}
+		}
+
+		// Cycle to next filter
+		nextIdx := (currentIdx + 1) % len(commentTypes)
+		m.filterOpts.CommentTypes = commentTypes[nextIdx]
+		m.buildVisualMapping()
+		m.cursor = 0
+
 	case "s":
 		// Cycle sort field
 		switch m.sortOpts.Field {

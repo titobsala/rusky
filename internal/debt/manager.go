@@ -118,6 +118,46 @@ func (m *Manager) Save(items []DebtItem) error {
 	return nil
 }
 
+// FindByLocation finds a debt item by file path and line number
+// Returns nil if not found
+func (m *Manager) FindByLocation(filePath string, lineNumber int) (*DebtItem, error) {
+	items, err := m.storage.Load()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load items: %w", err)
+	}
+
+	for i := range items {
+		item := &items[i]
+		if item.FilePath != nil && item.LineNumber != nil {
+			if *item.FilePath == filePath && *item.LineNumber == lineNumber {
+				return item, nil
+			}
+		}
+	}
+
+	return nil, nil
+}
+
+// UpdateDescription updates the description of a debt item by ID
+func (m *Manager) UpdateDescription(id string, newDescription string) error {
+	items, err := m.storage.Load()
+	if err != nil {
+		return fmt.Errorf("failed to load items: %w", err)
+	}
+
+	for i := range items {
+		if items[i].ID == id {
+			items[i].Description = newDescription
+			if err := m.storage.Save(items); err != nil {
+				return fmt.Errorf("failed to save items: %w", err)
+			}
+			return nil
+		}
+	}
+
+	return fmt.Errorf("item not found: %s", id)
+}
+
 // findItemIndex finds an item by UUID or 1-based index
 // Returns -1 if not found
 func (m *Manager) findItemIndex(items []DebtItem, identifier string) int {
