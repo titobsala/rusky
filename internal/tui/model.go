@@ -177,6 +177,72 @@ func (m *Model) resetDeleteConfirmation() {
 	m.deleteTargetIndex = -1
 }
 
+// getFilterIndex returns the current position (1-based) and total count for a given filter
+// Returns (currentIndex, total) or (0, 0) if filter is not active
+func (m *Model) getStatusFilterIndex() (int, int) {
+	statuses := []string{"all", "open", "completed"}
+	for i, s := range statuses {
+		if s == m.filterOpts.Status {
+			return i + 1, len(statuses)
+		}
+	}
+	return 1, len(statuses)
+}
+
+func (m *Model) getDateFilterIndex() (int, int) {
+	dates := []string{"all", "today", "week", "month"}
+	for i, d := range dates {
+		if d == m.filterOpts.DateRange {
+			return i + 1, len(dates)
+		}
+	}
+	return 1, len(dates)
+}
+
+func (m *Model) getPathFilterIndex() (int, int) {
+	if m.filterOpts.PathPattern == "" {
+		return 1, 2
+	}
+	return 2, 2
+}
+
+func (m *Model) getCommentTypeFilterIndex() (int, int) {
+	// Simplified 5-option cycle
+	commentTypes := [][]string{
+		{},                // all (no filter)
+		{"TODO"},          // TODO only
+		{"FIXME"},         // FIXME only
+		{"HACK"},          // HACK only
+		{"TODO", "FIXME"}, // TODO + FIXME combined
+	}
+
+	for i, types := range commentTypes {
+		if len(types) == len(m.filterOpts.CommentTypes) {
+			match := true
+			for j, t := range types {
+				if j >= len(m.filterOpts.CommentTypes) || t != m.filterOpts.CommentTypes[j] {
+					match = false
+					break
+				}
+			}
+			if match {
+				return i + 1, len(commentTypes)
+			}
+		}
+	}
+	return 1, len(commentTypes)
+}
+
+func (m *Model) getSortFilterIndex() (int, int) {
+	fields := []string{"status", "date", "path"}
+	for i, f := range fields {
+		if f == m.sortOpts.Field {
+			return i + 1, len(fields)
+		}
+	}
+	return 1, len(fields)
+}
+
 // NewModel creates a new TUI model
 func NewModel(manager *debt.Manager) (*Model, error) {
 	// Load items immediately
