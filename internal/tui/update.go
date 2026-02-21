@@ -139,18 +139,9 @@ func (m *Model) handleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		// Find current filter position
 		currentIdx := -1
 		for i, types := range commentTypes {
-			if len(types) == len(m.filterOpts.CommentTypes) {
-				match := true
-				for j, t := range types {
-					if j >= len(m.filterOpts.CommentTypes) || t != m.filterOpts.CommentTypes[j] {
-						match = false
-						break
-					}
-				}
-				if match {
-					currentIdx = i
-					break
-				}
+			if typesMatch(types, m.filterOpts.CommentTypes) {
+				currentIdx = i
+				break
 			}
 		}
 
