@@ -206,8 +206,23 @@ func (m *Model) getPathFilterIndex() (int, int) {
 	return 2, 2
 }
 
+func typesMatch(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	seen := make(map[string]bool)
+	for _, t := range a {
+		seen[t] = true
+	}
+	for _, t := range b {
+		if !seen[t] {
+			return false
+		}
+	}
+	return true
+}
+
 func (m *Model) getCommentTypeFilterIndex() (int, int) {
-	// Simplified 5-option cycle
 	commentTypes := [][]string{
 		{},                // all (no filter)
 		{"TODO"},          // TODO only
@@ -217,17 +232,8 @@ func (m *Model) getCommentTypeFilterIndex() (int, int) {
 	}
 
 	for i, types := range commentTypes {
-		if len(types) == len(m.filterOpts.CommentTypes) {
-			match := true
-			for j, t := range types {
-				if j >= len(m.filterOpts.CommentTypes) || t != m.filterOpts.CommentTypes[j] {
-					match = false
-					break
-				}
-			}
-			if match {
-				return i + 1, len(commentTypes)
-			}
+		if typesMatch(types, m.filterOpts.CommentTypes) {
+			return i + 1, len(commentTypes)
 		}
 	}
 	return 1, len(commentTypes)
