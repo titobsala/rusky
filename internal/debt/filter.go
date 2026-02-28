@@ -162,7 +162,11 @@ func FilterAndSort(items []DebtItem, filter FilterOptions, sortOpt SortOptions) 
 				if scoreA == scoreB {
 					return a.CreatedAt.Before(b.CreatedAt)
 				}
-				less = scoreA > scoreB // Higher priority first
+				// Return directly - higher priority first
+				if sortOpt.Direction == "desc" {
+					return scoreA < scoreB
+				}
+				return scoreA > scoreB
 			}
 			// "open" > "completed" string-wise? 'o' > 'c'.
 			// So "completed" comes before "open" alphabetically.

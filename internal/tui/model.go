@@ -160,7 +160,11 @@ func (m *Model) buildVisualMapping() {
 				if scoreA == scoreB {
 					return a.CreatedAt.Before(b.CreatedAt)
 				}
-				less = scoreA > scoreB
+				// Return directly - higher priority first
+				if m.sortOpts.Direction == "desc" {
+					return scoreA < scoreB
+				}
+				return scoreA > scoreB
 			}
 			// Open (0) < Completed (1)
 			scoreA := 0
