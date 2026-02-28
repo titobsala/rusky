@@ -109,6 +109,18 @@ func (m *Model) buildVisualMapping() {
 			}
 		}
 
+		// Priority Filter
+		if m.filterOpts.Priority != "" && m.filterOpts.Priority != "all" {
+			itemPriority := item.GetPriority()
+			if m.filterOpts.Priority == "none" {
+				if itemPriority != debt.PriorityNone {
+					continue
+				}
+			} else if !strings.EqualFold(string(itemPriority), m.filterOpts.Priority) {
+				continue
+			}
+		}
+
 		indices = append(indices, i)
 	}
 
@@ -142,7 +154,13 @@ func (m *Model) buildVisualMapping() {
 			less = pathA < pathB
 		case "status":
 			if a.Status == b.Status {
-				return a.CreatedAt.Before(b.CreatedAt)
+				// Secondary sort by priority (higher first)
+				scoreA := priorityScoreTUI(a.GetPriority())
+				scoreB := priorityScoreTUI(b.GetPriority())
+				if scoreA == scoreB {
+					return a.CreatedAt.Before(b.CreatedAt)
+				}
+				less = scoreA > scoreB
 			}
 			// Open (0) < Completed (1)
 			scoreA := 0
@@ -154,6 +172,13 @@ func (m *Model) buildVisualMapping() {
 				scoreB = 1
 			}
 			less = scoreA < scoreB
+		case "priority":
+			scoreA := priorityScoreTUI(a.GetPriority())
+			scoreB := priorityScoreTUI(b.GetPriority())
+			if scoreA == scoreB {
+				return a.CreatedAt.Before(b.CreatedAt)
+			}
+			less = scoreA > scoreB
 		default:
 			// Default to date
 			if a.CreatedAt.Equal(b.CreatedAt) {
@@ -222,6 +247,22 @@ func typesMatch(a, b []string) bool {
 	return true
 }
 
+// priorityScoreTUI returns a numeric score for sorting priorities in TUI
+func priorityScoreTUI(p debt.Priority) int {
+	switch p {
+	case debt.PriorityCritical:
+		return 4
+	case debt.PriorityHigh:
+		return 3
+	case debt.PriorityMedium:
+		return 2
+	case debt.PriorityLow:
+		return 1
+	default:
+		return 0
+	}
+}
+
 func (m *Model) getCommentTypeFilterIndex() (int, int) {
 	commentTypes := [][]string{
 		{},                // all (no filter)
@@ -239,8 +280,18 @@ func (m *Model) getCommentTypeFilterIndex() (int, int) {
 	return 1, len(commentTypes)
 }
 
+func (m *Model) getPriorityFilterIndex() (int, int) {
+	priorities := []string{"all", "none", "low", "medium", "high", "critical"}
+	for i, p := range priorities {
+		if p == m.filterOpts.Priority {
+			return i + 1, len(priorities)
+		}
+	}
+	return 1, len(priorities)
+}
+
 func (m *Model) getSortFilterIndex() (int, int) {
-	fields := []string{"status", "date", "path"}
+	fields := []string{"status", "date", "path", "priority"}
 	for i, f := range fields {
 		if f == m.sortOpts.Field {
 			return i + 1, len(fields)

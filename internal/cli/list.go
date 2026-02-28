@@ -13,12 +13,13 @@ import (
 )
 
 var (
-	statusFilter string
-	dateFilter   string
-	pathFilter   string
-	typeFilter   string
-	sortField    string
-	sortOrder    string
+	statusFilter   string
+	dateFilter     string
+	pathFilter     string
+	typeFilter     string
+	priorityFilter string
+	sortField      string
+	sortOrder      string
 )
 
 var listCmd = &cobra.Command{
@@ -37,6 +38,12 @@ var listCmd = &cobra.Command{
 			return fmt.Errorf("invalid status '%s': must be 'all', 'open', or 'completed'", statusFilter)
 		}
 
+		// Validate priority filter
+		validPriorities := map[string]bool{"all": true, "none": true, "low": true, "medium": true, "high": true, "critical": true}
+		if !validPriorities[priorityFilter] {
+			return fmt.Errorf("invalid priority '%s': must be 'all', 'none', 'low', 'medium', 'high', or 'critical'", priorityFilter)
+		}
+
 		// Parse comment types filter
 		var commentTypes []string
 		if typeFilter != "" {
@@ -53,6 +60,7 @@ var listCmd = &cobra.Command{
 			DateRange:    dateFilter,
 			PathPattern:  pathFilter,
 			CommentTypes: commentTypes,
+			Priority:     priorityFilter,
 		}
 
 		sortOpts := debt.SortOptions{
@@ -81,7 +89,7 @@ var listCmd = &cobra.Command{
 		}
 
 		// Create table headers
-		headers := []string{"IDX", "STATUS", "DESCRIPTION"}
+		headers := []string{"IDX", "STATUS", "DESCRIPTION", "PRIORITY"}
 		if hasLocations {
 			headers = append(headers, "LOCATION")
 		}
@@ -101,10 +109,16 @@ var listCmd = &cobra.Command{
 
 		// Add rows to the table
 		for i, item := range filteredItems {
+			priorityStr := ""
+			if item.IsPrioritySet() {
+				priorityStr = styles.GetPriorityStyle(item.GetPriority())
+			}
+
 			row := []string{
 				fmt.Sprintf("%d", i+1),
 				styles.GetStatusSymbol(item),
 				item.Description,
+				priorityStr,
 			}
 
 			if hasLocations {
@@ -146,6 +160,7 @@ func init() {
 	listCmd.Flags().StringVar(&dateFilter, "date", "all", "Filter by creation date: today, week, month, or all")
 	listCmd.Flags().StringVar(&pathFilter, "path", "", "Filter by file path (substring match or 'scanned')")
 	listCmd.Flags().StringVar(&typeFilter, "type", "", "Filter by comment type: TODO, FIXME, HACK, XXX, BUG, NOTE (comma-separated)")
-	listCmd.Flags().StringVar(&sortField, "sort", "status", "Sort field: status, date, path")
+	listCmd.Flags().StringVar(&priorityFilter, "priority", "all", "Filter by priority: none, low, medium, high, critical, or all")
+	listCmd.Flags().StringVar(&sortField, "sort", "status", "Sort field: status, date, path, priority")
 	listCmd.Flags().StringVar(&sortOrder, "order", "asc", "Sort order: asc, desc")
 }

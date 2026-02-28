@@ -12,12 +12,30 @@ type FilterOptions struct {
 	DateRange    string   // "all", "today", "week", "month"
 	PathPattern  string   // substring match, or "scanned" for all scanned items
 	CommentTypes []string // Filter by comment types (e.g., ["TODO", "FIXME"])
+	Priority     string   // "all", "none", "low", "medium", "high", "critical"
 }
 
 // SortOptions defines criteria for sorting debt items
 type SortOptions struct {
-	Field     string // "status", "date", "path"
+	Field     string // "status", "date", "path", "priority"
 	Direction string // "asc", "desc"
+}
+
+// priorityScore returns a numeric score for sorting priorities
+// Higher priority = higher score (for default ascending: critical > high > medium > low > none)
+func priorityScore(p Priority) int {
+	switch p {
+	case PriorityCritical:
+		return 4
+	case PriorityHigh:
+		return 3
+	case PriorityMedium:
+		return 2
+	case PriorityLow:
+		return 1
+	default:
+		return 0
+	}
 }
 
 // FilterAndSort applies filtering and sorting to a slice of debt items
@@ -91,6 +109,18 @@ func FilterAndSort(items []DebtItem, filter FilterOptions, sortOpt SortOptions) 
 			}
 		}
 
+		// Priority Filter
+		if filter.Priority != "" && filter.Priority != "all" {
+			itemPriority := item.GetPriority()
+			if filter.Priority == "none" {
+				if itemPriority != PriorityNone {
+					continue
+				}
+			} else if !strings.EqualFold(string(itemPriority), filter.Priority) {
+				continue
+			}
+		}
+
 		result = append(result, item)
 	}
 
@@ -126,9 +156,13 @@ func FilterAndSort(items []DebtItem, filter FilterOptions, sortOpt SortOptions) 
 		case "status":
 			// Status comparison: Open < Completed
 			if a.Status == b.Status {
-				// Secondary sort by date (newest first for better UX?)
-				// Let's stick to stable sort order
-				return a.CreatedAt.Before(b.CreatedAt)
+				// Secondary sort by priority (higher first)
+				scoreA := priorityScore(a.GetPriority())
+				scoreB := priorityScore(b.GetPriority())
+				if scoreA == scoreB {
+					return a.CreatedAt.Before(b.CreatedAt)
+				}
+				less = scoreA > scoreB // Higher priority first
 			}
 			// "open" > "completed" string-wise? 'o' > 'c'.
 			// So "completed" comes before "open" alphabetically.
@@ -143,6 +177,14 @@ func FilterAndSort(items []DebtItem, filter FilterOptions, sortOpt SortOptions) 
 				scoreB = 1
 			}
 			less = scoreA < scoreB
+		case "priority":
+			// Priority comparison: critical > high > medium > low > none
+			scoreA := priorityScore(a.GetPriority())
+			scoreB := priorityScore(b.GetPriority())
+			if scoreA == scoreB {
+				return a.CreatedAt.Before(b.CreatedAt)
+			}
+			less = scoreA > scoreB
 		default:
 			// Default to date
 			if a.CreatedAt.Equal(b.CreatedAt) {

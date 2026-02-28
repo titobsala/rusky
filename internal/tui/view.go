@@ -5,8 +5,24 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
+	"github.com/tito-sala/rusky/internal/debt"
 	"github.com/tito-sala/rusky/internal/intro"
 )
+
+var priorityIndicatorStyles = map[debt.Priority]lipgloss.Style{
+	debt.PriorityCritical: lipgloss.NewStyle().Foreground(lipgloss.Color("#FF4444")).Bold(true),
+	debt.PriorityHigh:     lipgloss.NewStyle().Foreground(lipgloss.Color("#FF8800")).Bold(true),
+	debt.PriorityMedium:   lipgloss.NewStyle().Foreground(lipgloss.Color("#FFDD00")),
+	debt.PriorityLow:      lipgloss.NewStyle().Foreground(lipgloss.Color("#4488FF")),
+}
+
+func getPriorityIndicator(priority debt.Priority) string {
+	style, ok := priorityIndicatorStyles[priority]
+	if !ok {
+		return ""
+	}
+	return style.Render("⚡")
+}
 
 // View renders the TUI
 func (m *Model) View() string {
@@ -24,7 +40,7 @@ func (m *Model) View() string {
 
 	var b strings.Builder
 
-	header := titleStyle.Render("Rusky - Technical Debt Manager v0.3.2")
+	header := titleStyle.Render("Rusky - Technical Debt Manager v0.4.0")
 	b.WriteString(header)
 	b.WriteString("\n\n")
 
@@ -61,6 +77,10 @@ func (m *Model) View() string {
 		idx, total := m.getCommentTypeFilterIndex()
 		filterStatus = append(filterStatus, fmt.Sprintf("Type:%s(%d/%d)", strings.Join(m.filterOpts.CommentTypes, ","), idx, total))
 	}
+	if m.filterOpts.Priority != "" && m.filterOpts.Priority != "all" {
+		idx, total := m.getPriorityFilterIndex()
+		filterStatus = append(filterStatus, fmt.Sprintf("Priority:%s(%d/%d)", m.filterOpts.Priority, idx, total))
+	}
 
 	// Always show sort
 	sortIcon := "↓" // asc
@@ -86,7 +106,7 @@ func (m *Model) View() string {
 
 	b.WriteString("\n")
 
-	footer := statusBarStyle.Render("↑↓:Navigate | Space:Toggle | d:Delete | f:Status t:Date p:Path c:Type | s:Sort o:Order r:Reset | q:Quit")
+	footer := statusBarStyle.Render("↑↓:Navigate | Space:Toggle | d:Delete | f:Status t:Date p:Path c:Type i:Priority | s:Sort o:Order r:Reset | q:Quit")
 	b.WriteString(footer)
 
 	return b.String()
@@ -162,10 +182,20 @@ func (m *Model) renderItem(arrayIndex, visualPos, displayIndex int) string {
 		prefix = "  "
 	}
 
+	// Add priority indicator for items with priority set
+	priorityIndicator := ""
+	if item.IsPrioritySet() {
+		priorityIndicator = getPriorityIndicator(item.GetPriority())
+	}
+
 	text = fmt.Sprintf("%d. %s", displayIndex, item.Description)
 
 	if item.IsCodeReference() {
 		text = fmt.Sprintf("%d. %s [%s]", displayIndex, item.Description, item.GetLocation())
+	}
+
+	if priorityIndicator != "" {
+		text = text + " " + priorityIndicator
 	}
 
 	var style lipgloss.Style

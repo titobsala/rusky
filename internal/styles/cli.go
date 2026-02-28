@@ -11,6 +11,10 @@ const (
 	ColorWhite  = "#FFFFFF"
 	ColorGray   = "#888888"
 	ColorGreen  = "#00AA00"
+	ColorRed    = "#FF4444"
+	ColorOrange = "#FF8800"
+	ColorYellow = "#FFDD00"
+	ColorBlue   = "#4488FF"
 )
 
 // Status symbols
@@ -55,6 +59,16 @@ var (
 	EmptyStateStyle = lipgloss.NewStyle().
 			Foreground(lipgloss.Color(ColorGray)).
 			Italic(true)
+
+	// SuccessStyle for success messages
+	SuccessStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color(ColorGreen)).
+			Bold(true)
+
+	// ErrorStyle for error messages
+	ErrorStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color(ColorRed)).
+			Bold(true)
 )
 
 // GetStatusSymbol returns a styled status symbol for the given debt item
@@ -63,4 +77,42 @@ func GetStatusSymbol(item debt.DebtItem) string {
 		return CompletedStatusStyle.Render(SymbolCompleted)
 	}
 	return OpenStatusStyle.Render(SymbolOpen)
+}
+
+// priorityColors maps priority levels to colors
+var priorityColors = map[debt.Priority]lipgloss.Color{
+	debt.PriorityCritical: lipgloss.Color(ColorRed),
+	debt.PriorityHigh:     lipgloss.Color(ColorOrange),
+	debt.PriorityMedium:   lipgloss.Color(ColorYellow),
+	debt.PriorityLow:      lipgloss.Color(ColorBlue),
+	debt.PriorityNone:     lipgloss.Color(ColorGray),
+}
+
+// priorityLabels maps priority levels to display labels
+var priorityLabels = map[debt.Priority]string{
+	debt.PriorityCritical: "critical",
+	debt.PriorityHigh:     "high",
+	debt.PriorityMedium:   "medium",
+	debt.PriorityLow:      "low",
+	debt.PriorityNone:     "none",
+}
+
+// GetPriorityLabel returns a human-readable priority label
+func GetPriorityLabel(priority debt.Priority) string {
+	if label, ok := priorityLabels[priority]; ok {
+		return label
+	}
+	return "none"
+}
+
+// GetPriorityStyle returns a styled priority label with color
+func GetPriorityStyle(priority debt.Priority) string {
+	color, ok := priorityColors[priority]
+	if !ok {
+		color = lipgloss.Color(ColorGray)
+	}
+	style := lipgloss.NewStyle().
+		Foreground(color).
+		Bold(true)
+	return style.Render(GetPriorityLabel(priority))
 }

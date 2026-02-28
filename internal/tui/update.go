@@ -80,6 +80,7 @@ func (m *Model) handleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.filterOpts.DateRange = "all"
 		m.filterOpts.PathPattern = ""
 		m.filterOpts.CommentTypes = []string{}
+		m.filterOpts.Priority = "all"
 		m.buildVisualMapping()
 		m.cursor = 0
 
@@ -151,6 +152,21 @@ func (m *Model) handleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.buildVisualMapping()
 		m.cursor = 0
 
+	case "i":
+		// Cycle priority filter
+		priorities := []string{"all", "none", "low", "medium", "high", "critical"}
+		currentIdx := 0
+		for i, p := range priorities {
+			if p == m.filterOpts.Priority {
+				currentIdx = i
+				break
+			}
+		}
+		nextIdx := (currentIdx + 1) % len(priorities)
+		m.filterOpts.Priority = priorities[nextIdx]
+		m.buildVisualMapping()
+		m.cursor = 0
+
 	case "s":
 		// Cycle sort field
 		switch m.sortOpts.Field {
@@ -159,6 +175,8 @@ func (m *Model) handleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		case "date":
 			m.sortOpts.Field = "path"
 		case "path":
+			m.sortOpts.Field = "priority"
+		case "priority":
 			m.sortOpts.Field = "status"
 		default:
 			m.sortOpts.Field = "status"
