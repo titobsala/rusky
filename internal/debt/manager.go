@@ -158,6 +158,27 @@ func (m *Manager) UpdateDescription(id string, newDescription string) error {
 	return fmt.Errorf("item not found: %s", id)
 }
 
+// SetPriority updates the priority of a debt item by ID
+func (m *Manager) SetPriority(id string, priority Priority) (*DebtItem, error) {
+	items, err := m.storage.Load()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load items: %w", err)
+	}
+
+	index := m.findItemIndex(items, id)
+	if index == -1 {
+		return nil, fmt.Errorf("item not found: %s", id)
+	}
+
+	items[index].Priority = priority
+
+	if err := m.storage.Save(items); err != nil {
+		return nil, fmt.Errorf("failed to save items: %w", err)
+	}
+
+	return &items[index], nil
+}
+
 // findItemIndex finds an item by UUID or 1-based index
 // Returns -1 if not found
 func (m *Manager) findItemIndex(items []DebtItem, identifier string) int {

@@ -43,4 +43,5 @@ func init() {
 	rootCmd.AddCommand(deleteCmd)
 	rootCmd.AddCommand(listCmd)
 	rootCmd.AddCommand(scanCmd)
+	rootCmd.AddCommand(priorityCmd)
 }
